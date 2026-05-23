@@ -1,0 +1,19 @@
+# --- C# / .NET ---
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
+*.suo
+*.userprefs
+*.db
+*.sqlite
+
+# --- Frontend (Web) ---
+node_modules/
+dist/
+build/
+.env                 # Lưu ý: Tuyệt đối không đẩy file .env chứa mật khẩu/API key lên GitHub!
+
+# --- Hệ điều hành ---
+.DS_Store            # Cho macOS
+Thumbs.db            # Cho Windows
