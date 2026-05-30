@@ -16,6 +16,7 @@ export default function Profile() {
     following: 45,
     publicPlaylists: 4,
     avatarColor: 'bg-indigo-600',
+    avatarUrl: '', // Thêm thuộc tính avatarUrl (có thể là URL hoặc rỗng)
   });
 
   // Dữ liệu mẫu cho Playlist công khai của user

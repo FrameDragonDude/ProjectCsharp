@@ -4,6 +4,7 @@ import { Play, Heart, MoreHorizontal, Clock } from 'lucide-react';
 export default function PlaylistDetail() {
   // Lấy ID từ URL (sẽ dùng để gọi API thật sau này)
   const { id } = useParams();
+  void id; // Đánh dấu đã dùng để tránh cảnh báo 'declared but never used'
 
   // Dữ liệu mẫu (Mock data) cho Playlist
   const mockPlaylist = {
