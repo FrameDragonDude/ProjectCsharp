@@ -9,6 +9,8 @@ import PlaylistDetail from './features/library/PlaylistDetail';
 import Notifications from './features/notification/Notifications';
 import Profile from './features/auth/Profile'; // Import trang Hồ sơ
 import ShareInbox from './features/share/ShareInbox';
+import VideoPlayer from './features/player/VideoPlayer';
+import AlbumDetail from './features/album/AlbumDetail';
 
 
 function App() {
@@ -24,6 +26,8 @@ function App() {
           <Route path="/search" element={<Search />} />
           <Route path="/library" element={<Library />} />
           <Route path="/playlist/:id" element={<PlaylistDetail />} />
+          <Route path="/album/:id" element={<AlbumDetail />} />
+          <Route path="/video/:id" element={<VideoPlayer />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/share" element={<ShareInbox />} />

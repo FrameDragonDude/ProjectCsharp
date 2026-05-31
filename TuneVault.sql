@@ -163,17 +163,17 @@ INSERT INTO Albums (Id, Title, ArtistId, ReleaseDate) VALUES
 
 -- 4. Chèn 10 Media Items (Trộn cả Audio và Video) 
 INSERT INTO MediaItems (Id, Title, FilePath, Duration, MediaType, OwnerId, AlbumId) VALUES
-(@Media1, 'Chúng Ta Của Hiện Tại', '/storage/audio/chung_ta_cua_hien_tai.mp3', '5:01', 'Audio', @UserAdmin, @AlbumId),
-(@Media2, 'Muộn Rồi Mà Sao Còn', '/storage/audio/muon_roi_ma_sao_con.mp3', '4:35', 'Audio', @UserAdmin, NULL),
+(@Media1, 'Chúng Ta Của Hiện Tại', '/storage/audio/chung_ta_cua_hien_tai.mp3', '5:02', 'Audio', @UserAdmin, @AlbumId),
+(@Media2, 'Muộn Rồi Mà Sao Còn', '/storage/audio/muon_roi_ma_sao_con.mp3', '4:48', 'Audio', @UserAdmin, NULL),
 (@Media3, 'Video Live Concert SGU', '/storage/video/sgu_concert.mp4', '10:00', 'Video', @UserAdmin, NULL),
-('77777777-7777-7777-7777-777777777744', 'Nơi Này Có Anh', '/storage/audio/noi_nay_co_anh.mp3', '4:20', 'Audio', @UserCandidate, NULL),
-('77777777-7777-7777-7777-777777777755', 'Lạc Trôi', '/storage/audio/lac_troi.mp3', '4:02', 'Audio', @UserCandidate, NULL),
-('77777777-7777-7777-7777-777777777766', 'Hãy Trao Cho Anh', '/storage/audio/hay_trao_cho_anh.mp3', '4:05', 'Audio', @UserAdmin, NULL),
-('77777777-7777-7777-7777-777777777777', 'Chạy Ngay Đi', '/storage/audio/chay_ngay_di.mp3', '4:00', 'Audio', @UserAdmin, NULL),
-('77777777-7777-7777-7777-777777777788', 'Chúng Ta Của Tương Lai', '/storage/video/chung_ta_cua_tuong_lai.mp4', '4:08', 'Video', @UserAdmin, @AlbumId),
+('77777777-7777-7777-7777-777777777744', 'Nơi Này Có Anh', '/storage/audio/noi_nay_co_anh.mp3', '4:38', 'Audio', @UserCandidate, NULL),
+('77777777-7777-7777-7777-777777777755', 'Lạc Trôi', '/storage/audio/lac_troi.mp3', '4:32', 'Audio', @UserCandidate, NULL),
+('77777777-7777-7777-7777-777777777766', 'Hãy Trao Cho Anh', '/storage/audio/hay_trao_cho_anh.mp3', '4:22', 'Audio', @UserAdmin, NULL),
+('77777777-7777-7777-7777-777777777777', 'Chạy Ngay Đi', '/storage/audio/chay_ngay_di.mp3', '4:33', 'Audio', @UserAdmin, NULL),
+('77777777-7777-7777-7777-777777777788', 'Chúng Ta Của Tương Lai', '/storage/video/chung_ta_cua_tuong_lai.mp4', '4:36', 'Video', @UserAdmin, @AlbumId),
 ('77777777-7777-7777-7777-777777777799', 'Âm Thầm Bên Em', '/storage/audio/am_tham_ben_em.mp3', '4:53', 'Audio', @UserCandidate, NULL),
-('77777777-7777-7777-7777-777777777700', 'Cơn Mưa Ngang Qua', '/storage/audio/con_mua_ngang_qua.mp3', '3:50', 'Audio', @UserCandidate, NULL);
-
+('77777777-7777-7777-7777-777777777700', 'Cơn Mưa Ngang Qua', '/storage/audio/con_mua_ngang_qua.mp3', '3:51', 'Audio', @UserCandidate, NULL);
+    
 -- 5. Chèn 2 Playlist mẫu 
 INSERT INTO Playlists (Id, Name, Description, CreatedByUserId) VALUES
 (@Playlist1, 'Nhạc Chill Cuối Tuần', 'Danh sách phát nhạc thư giãn', @UserAdmin),
