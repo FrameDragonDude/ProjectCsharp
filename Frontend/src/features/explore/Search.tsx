@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Album, Play, Search as SearchIcon, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { searchCatalog } from '../../services/api/tuneVaultApi';
+import { resolveAssetUrl } from '../../utils/resolveAsset';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import type { SearchResult } from '../../types';
 
@@ -153,7 +154,7 @@ export default function Search() {
                 {albumResults.map((album) => (
                   <Link key={album.id} to={`/album/${album.id}`} className="rounded-2xl border border-white/5 bg-neutral-950/60 p-4 hover:bg-neutral-950 transition block">
                     <div className="aspect-square rounded-xl bg-neutral-800 overflow-hidden mb-4 flex items-center justify-center text-neutral-400">
-                      {album.coverImageUrl ? <img src={album.coverImageUrl} alt={album.title} className="h-full w-full object-cover" /> : <Album size={42} />}
+                      {album.coverImageUrl ? <img src={resolveAssetUrl(album.coverImageUrl)} alt={album.title} className="h-full w-full object-cover" /> : <Album size={42} />}
                     </div>
                     <p className="text-lg font-semibold truncate">{album.title}</p>
                     <p className="text-sm text-neutral-400 truncate">{album.subtitle}</p>

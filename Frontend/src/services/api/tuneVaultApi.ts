@@ -63,3 +63,12 @@ export async function createAlbum(title: string, artistName: string, coverImageU
 
   return response.data as any;
 }
+
+export async function assignMediaToAlbum(albumId: string, mediaItemId: string) {
+  await axiosClient.post(`/albums/${albumId}/tracks`, {
+    mediaItemId,
+  });
+  // return updated summary
+  const response = await axiosClient.get('/library/summary');
+  return response.data as any;
+}

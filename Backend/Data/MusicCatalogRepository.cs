@@ -16,6 +16,8 @@ public interface IMusicCatalogRepository
     Task<PlaylistDto> CreatePlaylistAsync(CreatePlaylistRequest request, CancellationToken cancellationToken = default);
     Task AddMediaToPlaylistAsync(string playlistId, string mediaItemId, CancellationToken cancellationToken = default);
     Task<AlbumDto> CreateAlbumAsync(CreateAlbumRequest request, CancellationToken cancellationToken = default);
+    Task<AlbumDto?> UpdateAlbumCoverAsync(string albumId, string? coverImageUrl, CancellationToken cancellationToken = default);
+    Task<bool> AssignMediaToAlbumAsync(string albumId, string mediaItemId, CancellationToken cancellationToken = default);
 }
 
 public sealed class MySqlMusicCatalogRepository(IConfiguration configuration) : IMusicCatalogRepository
@@ -305,6 +307,61 @@ VALUES (@Id, @Title, @CoverImageUrl, @ArtistId, @ReleaseDate);
             await transaction.RollbackAsync(cancellationToken);
             throw;
         }
+    }
+
+    public async Task<AlbumDto?> UpdateAlbumCoverAsync(string albumId, string? coverImageUrl, CancellationToken cancellationToken = default)
+    {
+        await using var connection = new MySqlConnection(ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        const string updateSql = @"
+UPDATE Albums SET CoverImageUrl = @CoverImageUrl WHERE Id = @Id;";
+
+        await using (var updateCmd = new MySqlCommand(updateSql, connection))
+        {
+            updateCmd.Parameters.AddWithValue("@CoverImageUrl", (object?)coverImageUrl ?? DBNull.Value);
+            updateCmd.Parameters.AddWithValue("@Id", albumId);
+
+            var rows = await updateCmd.ExecuteNonQueryAsync(cancellationToken);
+            if (rows == 0) return null;
+        }
+
+        const string selectSql = @"
+SELECT a.Id, a.Title, a.CoverImageUrl, a.ArtistId, art.Name AS ArtistName, DATE_FORMAT(a.ReleaseDate, '%Y-%m-%d') AS ReleaseDate
+FROM Albums a
+INNER JOIN Artists art ON art.Id = a.ArtistId
+WHERE a.Id = @Id
+LIMIT 1;";
+
+        await using var cmd = new MySqlCommand(selectSql, connection);
+        cmd.Parameters.AddWithValue("@Id", albumId);
+
+        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken)) return null;
+
+        return new AlbumDto(
+            GetRequiredDbString(reader, "Id"),
+            reader.GetString("Title"),
+            reader.IsDBNull(reader.GetOrdinal("CoverImageUrl")) ? null : reader.GetString("CoverImageUrl"),
+            GetRequiredDbString(reader, "ArtistId"),
+            reader.GetString("ArtistName"),
+            reader.GetString("ReleaseDate"));
+    }
+
+    public async Task<bool> AssignMediaToAlbumAsync(string albumId, string mediaItemId, CancellationToken cancellationToken = default)
+    {
+        await using var connection = new MySqlConnection(ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        const string updateSql = @"
+UPDATE MediaItems SET AlbumId = @AlbumId WHERE Id = @Id;";
+
+        await using var cmd = new MySqlCommand(updateSql, connection);
+        cmd.Parameters.AddWithValue("@AlbumId", albumId);
+        cmd.Parameters.AddWithValue("@Id", mediaItemId);
+
+        var rows = await cmd.ExecuteNonQueryAsync(cancellationToken);
+        return rows > 0;
     }
 
     private static async Task<IReadOnlyList<MediaItemDto>> LoadMediaItemsAsync(MySqlConnection connection, string mediaType, CancellationToken cancellationToken)

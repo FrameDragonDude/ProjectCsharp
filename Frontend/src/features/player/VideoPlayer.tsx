@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Play, Video } from 'lucide-react';
 import { getMediaItemById } from '../../services/api/tuneVaultApi';
+import { resolveAssetUrl } from '../../utils/resolveAsset';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import type { MediaItem } from '../../types';
 
@@ -107,7 +108,7 @@ export default function VideoPlayer() {
         <section className="space-y-4 rounded-3xl border border-white/10 bg-gradient-to-br from-neutral-950 to-neutral-900 p-4 md:p-6">
           <div className="aspect-video overflow-hidden rounded-2xl bg-black flex items-center justify-center border border-white/10">
             {resolvedSrc ? (
-              <video key={resolvedSrc} controls className="h-full w-full object-contain" poster={mediaItem.coverImageUrl ?? undefined}>
+              <video key={resolvedSrc} controls className="h-full w-full object-contain" poster={resolveAssetUrl(mediaItem.coverImageUrl) ?? undefined}>
                 <source src={resolvedSrc} type="video/mp4" />
                 Trình duyệt của bạn không hỗ trợ video.
               </video>

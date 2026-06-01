@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, Video } from 'lucide-react';
 import { usePlayerStore } from '../store/usePlayerStore';
+import { resolveAssetUrl } from '../utils/resolveAsset';
 
 export default function VideoOverlay() {
   const currentTrack = usePlayerStore((state) => state.currentTrack);
@@ -124,7 +125,7 @@ export default function VideoOverlay() {
                   controls
                   autoPlay
                   className="h-full w-full object-contain"
-                  poster={currentTrack.coverImageUrl ?? undefined}
+                  poster={resolveAssetUrl(currentTrack.coverImageUrl) ?? undefined}
                 >
                   <source src={resolvedSrc} type="video/mp4" />
                   Trình duyệt của bạn không hỗ trợ video.

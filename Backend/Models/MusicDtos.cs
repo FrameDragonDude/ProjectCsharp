@@ -48,3 +48,4 @@ public sealed record CreatePlaylistRequest(string Name, string? Description, str
 public sealed record AddTrackRequest(string MediaItemId);
 
 public sealed record CreateAlbumRequest(string Title, string ArtistName, string? CoverImageUrl, string? ReleaseDate);
+public sealed record UpdateAlbumCoverRequest(string? CoverImageUrl);

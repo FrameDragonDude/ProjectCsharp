@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Album, Music2, Play, Plus, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getLibrarySummary } from '../../services/api/tuneVaultApi';
+import { resolveAssetUrl } from '../../utils/resolveAsset';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import type { Album as AlbumType, MediaItem } from '../../types';
 
@@ -119,7 +120,7 @@ export default function Home() {
             <Link key={album.id} to={`/album/${album.id}`} className="block rounded-2xl border border-white/5 bg-neutral-950/60 p-4 hover:bg-neutral-950 transition">
               <div className="aspect-square rounded-xl bg-neutral-800 overflow-hidden mb-4 flex items-center justify-center text-neutral-400">
                 {album.coverImageUrl ? (
-                  <img src={album.coverImageUrl} alt={album.title} className="h-full w-full object-cover" />
+                  <img src={resolveAssetUrl(album.coverImageUrl)} alt={album.title} className="h-full w-full object-cover" />
                 ) : (
                   <Album size={42} />
                 )}

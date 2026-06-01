@@ -70,6 +70,13 @@ public class CatalogController(IMusicCatalogRepository repository) : ControllerB
         return Ok(album);
     }
 
+    [HttpPatch("albums/{id}/cover")]
+    public async Task<ActionResult<AlbumDto>> UpdateAlbumCover(string id, [FromBody] UpdateAlbumCoverRequest request, CancellationToken cancellationToken)
+    {
+        var updated = await repository.UpdateAlbumCoverAsync(id, request.CoverImageUrl, cancellationToken);
+        return updated is null ? NotFound() : Ok(updated);
+    }
+
     [HttpPost("playlists/{playlistId}/tracks")]
     public async Task<IActionResult> AddTrack(string playlistId, [FromBody] AddTrackRequest request, CancellationToken cancellationToken)
     {
@@ -80,5 +87,17 @@ public class CatalogController(IMusicCatalogRepository repository) : ControllerB
 
         await repository.AddMediaToPlaylistAsync(playlistId, request.MediaItemId, cancellationToken);
         return NoContent();
+    }
+
+    [HttpPost("albums/{albumId}/tracks")]
+    public async Task<IActionResult> AddTrackToAlbum(string albumId, [FromBody] AddTrackRequest request, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.MediaItemId))
+        {
+            return BadRequest("MediaItemId is required.");
+        }
+
+        var ok = await repository.AssignMediaToAlbumAsync(albumId, request.MediaItemId, cancellationToken);
+        return ok ? NoContent() : NotFound();
     }
 }
