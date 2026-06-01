@@ -11,6 +11,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const playTrack = usePlayerStore((state) => state.playTrack);
+  const openVideo = usePlayerStore((state) => state.openVideo);
 
   useEffect(() => {
     void (async () => {
@@ -68,13 +69,23 @@ export default function Home() {
                     >
                       <Play size={16} /> Phát
                     </button>
-                    <Link
-                      to={song.mediaType === 'Video' ? `/video/${song.id}` : '/library'}
-                      className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/80 hover:text-white hover:border-white/30 transition"
-                    >
-                      <Plus size={16} />
-                      {song.mediaType === 'Video' ? 'Xem video' : 'Thêm vào playlist'}
-                    </Link>
+                    {song.mediaType === 'Video' ? (
+                      <button
+                        onClick={() => openVideo(song)}
+                        className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/80 hover:text-white hover:border-white/30 transition"
+                      >
+                        <Plus size={16} />
+                        Xem video
+                      </button>
+                    ) : (
+                      <Link
+                        to="/library"
+                        className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/80 hover:text-white hover:border-white/30 transition"
+                      >
+                        <Plus size={16} />
+                        Thêm vào playlist
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>

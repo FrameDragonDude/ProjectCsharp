@@ -11,6 +11,7 @@ export default function Search() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const playTrack = usePlayerStore((state) => state.playTrack);
+  const openVideo = usePlayerStore((state) => state.openVideo);
 
   useEffect(() => {
     void (async () => {
@@ -112,9 +113,28 @@ export default function Search() {
                           Phát
                         </button>
                       )}
-                      <Link to={result.mediaType === 'Video' ? `/video/${result.id}` : '/library'} className="rounded-full border border-white/10 px-3 py-2 text-sm text-white/80 hover:text-white hover:border-white/30 transition">
-                        {result.mediaType === 'Video' ? 'Mở video' : 'Thêm vào playlist'}
-                      </Link>
+                      {result.mediaType === 'Video' ? (
+                        <button
+                          onClick={() => openVideo({
+                            id: result.id,
+                            title: result.title,
+                            filePath: result.filePath ?? '',
+                            duration: result.subtitle.split('•').at(-1)?.trim() ?? '0:00',
+                            mediaType: result.mediaType ?? 'Video',
+                            ownerId: '22222222-2222-2222-2222-222222222222',
+                            albumId: result.albumId ?? null,
+                            coverImageUrl: result.coverImageUrl ?? null,
+                            artistName: result.subtitle.split('•')[0]?.trim() ?? null,
+                          })}
+                          className="rounded-full border border-white/10 px-3 py-2 text-sm text-white/80 hover:text-white hover:border-white/30 transition"
+                        >
+                          Mở video
+                        </button>
+                      ) : (
+                        <Link to="/library" className="rounded-full border border-white/10 px-3 py-2 text-sm text-white/80 hover:text-white hover:border-white/30 transition">
+                          Thêm vào playlist
+                        </Link>
+                      )}
                     </div>
                   </div>
                 ))}

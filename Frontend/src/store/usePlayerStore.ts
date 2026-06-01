@@ -3,6 +3,7 @@ import type { MediaItem } from '../types';
 
 interface PlayerState {
 	currentTrack: MediaItem | null;
+	isVideoOpen: boolean;
 	queue: MediaItem[];
 	queueIndex: number;
 	isPlaying: boolean;
@@ -11,6 +12,8 @@ interface PlayerState {
 	duration: number;
 	playTrack: (track: MediaItem, queue?: MediaItem[]) => void;
 	playQueue: (tracks: MediaItem[], startIndex?: number) => void;
+	openVideo: (track: MediaItem) => void;
+	closeVideo: () => void;
 	pause: () => void;
 	resume: () => void;
 	togglePlay: () => void;
@@ -23,6 +26,7 @@ interface PlayerState {
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
 	currentTrack: null,
+	isVideoOpen: false,
 	queue: [],
 	queueIndex: 0,
 	isPlaying: false,
@@ -49,6 +53,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 			duration: 0,
 		});
 	},
+	openVideo: (track) => set({ currentTrack: track, isVideoOpen: true, isPlaying: false, progress: 0, duration: 0 }),
+	closeVideo: () => set({ isVideoOpen: false }),
 	pause: () => set({ isPlaying: false }),
 	resume: () => set({ isPlaying: Boolean(get().currentTrack) }),
 	togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying && Boolean(state.currentTrack) })),

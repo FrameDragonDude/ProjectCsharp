@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import PlayerBar from './PlayerBar';
 import GlobalAudioPlayer from '../../components/GlobalAudioPlayer';
+import VideoOverlay from '../../components/VideoOverlay';
 
 export default function MainLayout() {
   return (
@@ -22,6 +23,7 @@ export default function MainLayout() {
         </aside>
       </div>
 
+      <VideoOverlay />
       <PlayerBar />
       <GlobalAudioPlayer />
     </div>

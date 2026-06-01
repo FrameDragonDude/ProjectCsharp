@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Pause, Play, SkipBack, SkipForward, Volume2, Video } from 'lucide-react';
 import { usePlayerStore } from '../../store/usePlayerStore';
 
@@ -15,7 +14,6 @@ const formatTime = (seconds: number) => {
 };
 
 export default function PlayerBar() {
-  const navigate = useNavigate();
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const queue = usePlayerStore((state) => state.queue);
@@ -28,6 +26,7 @@ export default function PlayerBar() {
   const previous = usePlayerStore((state) => state.previous);
   const setVolume = usePlayerStore((state) => state.setVolume);
   const setProgress = usePlayerStore((state) => state.setProgress);
+  const openVideo = usePlayerStore((state) => state.openVideo);
 
   const canGoPrevious = useMemo(() => queue.length > 1 && queueIndex > 0, [queue.length, queueIndex]);
   const canGoNext = useMemo(() => queue.length > 1 && queueIndex < queue.length - 1, [queue.length, queueIndex]);
@@ -64,7 +63,7 @@ export default function PlayerBar() {
           </button>
           {currentTrack?.mediaType === 'Video' && (
             <button
-              onClick={() => navigate(`/video/${currentTrack.id}`)}
+              onClick={() => openVideo(currentTrack)}
               className="text-xs font-semibold text-white/80 hover:text-white border border-neutral-700 rounded-full px-3 py-1 transition"
             >
               Mở video
