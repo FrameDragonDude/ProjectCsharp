@@ -1,4 +1,7 @@
-﻿var builder = WebApplication.CreateBuilder(args);
+﻿using Microsoft.EntityFrameworkCore;
+using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+
+var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -14,6 +17,25 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddScoped<Backend.Data.IMusicCatalogRepository, Backend.Data.MySqlMusicCatalogRepository>();
+// Register EF Core DbContext
+builder.Services.AddDbContext<Backend.Data.MusicDbContext>(options =>
+{
+	var cs = builder.Configuration.GetConnectionString("SpotifyDb");
+	if (!string.IsNullOrEmpty(cs))
+	{
+		options.UseMySql(cs, ServerVersion.AutoDetect(cs));
+	}
+});
+
+// Register IDbConnection for Dapper usage
+builder.Services.AddTransient<System.Data.IDbConnection>(sp =>
+{
+	var cs = builder.Configuration.GetConnectionString("SpotifyDb");
+	return new MySqlConnector.MySqlConnection(cs);
+});
+
+// Register Dapper helper
+builder.Services.AddTransient<Backend.Infrastructure.DapperQueries>();
 
 var app = builder.Build();
 

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Heart, Plus, Upload, ListMusic, Video, Music, Play } from 'lucide-react';
-import { addMediaToPlaylist, createPlaylist, getLibrarySummary, createAlbum } from '../../services/api/tuneVaultApi';
+import { addMediaToPlaylist, createPlaylist, getLibrarySummary, createAlbum, getPlaylistTracks } from '../../services/api/tuneVaultApi';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import type { MediaItem, Playlist } from '../../types';
+import { resolveAssetUrl } from '../../utils/resolveAsset';
 
 export default function Library() {
   const [activeTab, setActiveTab] = useState<'playlists' | 'uploads'>('playlists');
@@ -10,6 +11,7 @@ export default function Library() {
   const [songs, setSongs] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [playlistCovers, setPlaylistCovers] = useState<Record<string, string | null>>({});
   const [createOpen, setCreateOpen] = useState(false);
   const [playlistName, setPlaylistName] = useState('');
   const [playlistDescription, setPlaylistDescription] = useState('');
@@ -38,6 +40,30 @@ export default function Library() {
   useEffect(() => {
     void loadLibrary();
   }, []);
+
+  useEffect(() => {
+    // For playlists without a cover, fetch their tracks and use first track cover
+    const fetchMissingCovers = async () => {
+      const missing = playlists.filter((p) => !p.coverImageUrl);
+      if (missing.length === 0) return;
+
+      const updates: Record<string, string | null> = {};
+      await Promise.all(
+        missing.map(async (p) => {
+          try {
+            const tracks = await getPlaylistTracks(p.id);
+            updates[p.id] = tracks[0]?.coverImageUrl ?? null;
+          } catch {
+            updates[p.id] = null;
+          }
+        })
+      );
+
+      setPlaylistCovers((prev) => ({ ...prev, ...updates }));
+    };
+
+    void fetchMissingCovers();
+  }, [playlists]);
 
   const visibleUploads = useMemo(() => songs.slice(0, 8), [songs]);
 
@@ -130,10 +156,16 @@ export default function Library() {
                   key={playlist.id}
                   className="p-4 bg-neutral-800/40 hover:bg-neutral-800 rounded-md cursor-pointer transition group"
                 >
-                  <div className={`w-full aspect-square mb-4 rounded shadow-lg flex items-center justify-center ${
+                  <div className={`w-full aspect-square mb-4 rounded overflow-hidden shadow-lg flex items-center justify-center ${
                     playlist.name.toLowerCase().includes('thích') ? 'bg-gradient-to-br from-indigo-600 to-blue-400' : 'bg-neutral-700'
                   }`}>
-                    {playlist.name.toLowerCase().includes('thích') ? (
+                    { (playlist.coverImageUrl ?? playlistCovers[playlist.id]) ? (
+                      <img
+                        src={resolveAssetUrl(playlist.coverImageUrl ?? playlistCovers[playlist.id])}
+                        alt={playlist.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : playlist.name.toLowerCase().includes('thích') ? (
                       <Heart size={48} className="text-white" fill="white" />
                     ) : (
                       <ListMusic size={48} className="text-neutral-500" />
@@ -166,8 +198,14 @@ export default function Library() {
                     className="flex items-center justify-between p-3 rounded-md hover:bg-neutral-800/50 cursor-pointer group transition"
                   >
                     <div className="flex items-center space-x-4 min-w-0">
-                      <div className="w-12 h-12 bg-neutral-700 rounded flex items-center justify-center text-neutral-400 shrink-0">
-                        {item.mediaType === 'Audio' ? <Music size={24} /> : <Video size={24} />}
+                        <div className="w-12 h-12 bg-neutral-700 rounded overflow-hidden flex items-center justify-center text-neutral-400 shrink-0">
+                          {item.coverImageUrl ? (
+                            <img src={resolveAssetUrl(item.coverImageUrl)} alt={item.title} className="h-full w-full object-cover" />
+                          ) : item.mediaType === 'Audio' ? (
+                            <Music size={24} />
+                          ) : (
+                            <Video size={24} />
+                          )}
                       </div>
                       <div className="min-w-0">
                         <p className="text-white font-semibold truncate">{item.title}</p>
@@ -213,8 +251,14 @@ export default function Library() {
                   className="flex items-center justify-between p-3 rounded-md hover:bg-neutral-800/50 cursor-pointer group transition"
                 >
                   <div className="flex items-center space-x-4 min-w-0">
-                    <div className="w-12 h-12 bg-neutral-700 rounded flex items-center justify-center text-neutral-400">
-                      {item.mediaType === 'Audio' ? <Music size={24} /> : <Video size={24} />}
+                    <div className="w-12 h-12 bg-neutral-700 rounded overflow-hidden flex items-center justify-center text-neutral-400">
+                      {item.coverImageUrl ? (
+                        <img src={resolveAssetUrl(item.coverImageUrl)} alt={item.title} className="h-full w-full object-cover" />
+                      ) : item.mediaType === 'Audio' ? (
+                        <Music size={24} />
+                      ) : (
+                        <Video size={24} />
+                      )}
                     </div>
                     <div className="min-w-0">
                       <p className="text-white font-semibold truncate">{item.title}</p>

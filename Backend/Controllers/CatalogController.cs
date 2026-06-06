@@ -77,6 +77,13 @@ public class CatalogController(IMusicCatalogRepository repository) : ControllerB
         return updated is null ? NotFound() : Ok(updated);
     }
 
+    [HttpPatch("media/{id}/cover")]
+    public async Task<ActionResult<MediaItemDto>> UpdateMediaCover(string id, [FromBody] UpdateAlbumCoverRequest request, CancellationToken cancellationToken)
+    {
+        var updated = await repository.UpdateMediaCoverAsync(id, request.CoverImageUrl, cancellationToken);
+        return updated is null ? NotFound() : Ok(updated);
+    }
+
     [HttpPost("playlists/{playlistId}/tracks")]
     public async Task<IActionResult> AddTrack(string playlistId, [FromBody] AddTrackRequest request, CancellationToken cancellationToken)
     {

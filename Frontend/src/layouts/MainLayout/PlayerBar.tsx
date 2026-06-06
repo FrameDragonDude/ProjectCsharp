@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Pause, Play, SkipBack, SkipForward, Volume2, Video } from 'lucide-react';
+import { resolveAssetUrl } from '../../utils/resolveAsset';
 import { usePlayerStore } from '../../store/usePlayerStore';
 
 const formatTime = (seconds: number) => {
@@ -35,7 +36,13 @@ export default function PlayerBar() {
     <div className="h-24 bg-black border-t border-neutral-800 flex items-center justify-between px-4 shrink-0">
       <div className="flex items-center space-x-4 w-1/3 min-w-0">
         <div className="w-14 h-14 bg-neutral-800 rounded shadow-md flex items-center justify-center text-neutral-500 overflow-hidden shrink-0">
-          {currentTrack?.mediaType === 'Video' ? <Video size={20} /> : <Play size={18} />}
+          {currentTrack?.coverImageUrl ? (
+            <img src={resolveAssetUrl(currentTrack.coverImageUrl)} alt={currentTrack.title} className="h-full w-full object-cover" />
+          ) : currentTrack?.mediaType === 'Video' ? (
+            <Video size={20} />
+          ) : (
+            <Play size={18} />
+          )}
         </div>
 
         <div className="min-w-0">

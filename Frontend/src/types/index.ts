@@ -44,6 +44,7 @@ export interface Playlist {
 	isPublic: boolean;
 	createdByUserId: string;
 	trackCount: number;
+	coverImageUrl?: string | null;
 }
 
 export interface LibrarySummary {

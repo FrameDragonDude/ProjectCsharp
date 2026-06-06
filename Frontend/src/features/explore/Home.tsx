@@ -57,8 +57,14 @@ export default function Home() {
             {songs.slice(0, 6).map((song) => (
             <div key={song.id} className="group rounded-2xl border border-white/5 bg-white/5 p-4 hover:bg-white/10 transition">
               <div className="flex items-start gap-4">
-                <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center shrink-0">
-                  {song.mediaType === 'Video' ? <Video size={24} /> : <Music2 size={24} />}
+                <div className="h-16 w-16 rounded-xl bg-neutral-800 overflow-hidden flex items-center justify-center shrink-0 text-neutral-300">
+                  {song.coverImageUrl ? (
+                    <img src={resolveAssetUrl(song.coverImageUrl)} alt={song.title} className="h-full w-full object-cover" />
+                  ) : song.mediaType === 'Video' ? (
+                    <Video size={24} />
+                  ) : (
+                    <Music2 size={24} />
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-lg font-semibold truncate">{song.title}</p>
@@ -119,8 +125,12 @@ export default function Home() {
             {albums.map((album) => (
             <Link key={album.id} to={`/album/${album.id}`} className="block rounded-2xl border border-white/5 bg-neutral-950/60 p-4 hover:bg-neutral-950 transition">
               <div className="aspect-square rounded-xl bg-neutral-800 overflow-hidden mb-4 flex items-center justify-center text-neutral-400">
-                {album.coverImageUrl ? (
-                  <img src={resolveAssetUrl(album.coverImageUrl)} alt={album.title} className="h-full w-full object-cover" />
+                {album.coverImageUrl || songs.find((song) => song.albumId === album.id)?.coverImageUrl ? (
+                  <img
+                    src={resolveAssetUrl(album.coverImageUrl ?? songs.find((song) => song.albumId === album.id)?.coverImageUrl ?? '')}
+                    alt={album.title}
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   <Album size={42} />
                 )}

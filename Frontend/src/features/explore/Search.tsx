@@ -89,7 +89,13 @@ export default function Search() {
                   <div key={result.id} className="flex items-center justify-between gap-4 p-3 rounded-xl bg-transparent hover:bg-neutral-800/50 cursor-pointer group transition">
                     <div className="flex items-center gap-4 min-w-0">
                       <div className="w-12 h-12 bg-neutral-700 rounded-xl relative flex-shrink-0 overflow-hidden flex items-center justify-center text-neutral-300">
-                        {result.mediaType === 'Video' ? <Video size={18} /> : <Play fill="white" className="w-5 h-5 text-white" />}
+                        {result.coverImageUrl ? (
+                          <img src={resolveAssetUrl(result.coverImageUrl)} alt={result.title} className="h-full w-full object-cover" />
+                        ) : result.mediaType === 'Video' ? (
+                          <Video size={18} />
+                        ) : (
+                          <Play fill="white" className="w-5 h-5 text-white" />
+                        )}
                       </div>
                       <div className="flex flex-col min-w-0">
                         <span className="text-white font-semibold truncate">{result.title}</span>

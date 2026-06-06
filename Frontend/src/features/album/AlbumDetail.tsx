@@ -62,7 +62,15 @@ export default function AlbumDetail() {
     <div className="p-6 text-white">
       <div className="flex items-center gap-6 mb-6">
         <div className="w-48 h-48 bg-neutral-800 rounded overflow-hidden flex items-center justify-center">
-          {album.coverImageUrl ? <img src={resolveAssetUrl(album.coverImageUrl)} alt={album.title} className="w-full h-full object-cover" /> : <div className="text-neutral-400">No cover</div>}
+          {album.coverImageUrl || tracks[0]?.coverImageUrl ? (
+            <img
+              src={resolveAssetUrl(album.coverImageUrl ?? tracks[0]?.coverImageUrl ?? '')}
+              alt={album.title}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="text-neutral-400">No cover</div>
+          )}
         </div>
         <div>
           <h1 className="text-3xl font-bold">{album.title}</h1>

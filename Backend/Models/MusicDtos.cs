@@ -26,7 +26,8 @@ public sealed record PlaylistDto(
     string? Description,
     bool IsPublic,
     string CreatedByUserId,
-    int TrackCount);
+    int TrackCount,
+    string? CoverImageUrl);
 
 public sealed record SearchResultDto(
     string Id,
