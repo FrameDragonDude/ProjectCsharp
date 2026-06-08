@@ -65,3 +65,10 @@ public sealed record NotificationDto(
     bool IsRead,
     DateTime CreatedAt);
 
+public sealed record RecommendationContextDto(
+    IReadOnlyList<MediaItemDto> RecentPlays,
+    IReadOnlyList<MediaItemDto> CandidateItems);
+
+public sealed record SongRecommendationDto(
+    MediaItemDto Item,
+    string Reason);

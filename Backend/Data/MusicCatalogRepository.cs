@@ -20,6 +20,7 @@ public interface IMusicCatalogRepository
 
     Task RecordPlayHistoryAsync(RecordPlayHistoryCommand command, CancellationToken cancellationToken = default);
     Task<NotificationDto> ShareMediaAsync(ShareMediaCommand command, CancellationToken cancellationToken = default);
+    Task<RecommendationContextDto> GetRecommendationContextAsync(string userId, int historyLimit = 20, int candidateLimit = 30, CancellationToken cancellationToken = default);
 }
 
 public sealed class MySqlMusicCatalogRepository(IConfiguration configuration) : IMusicCatalogRepository
@@ -528,6 +529,67 @@ VALUES (@Id, @UserId, 'Share', @PayloadJson, 0, @CreatedAt);";
             await transaction.RollbackAsync(cancellationToken);
             throw;
         }
+    }
+
+    public async Task<RecommendationContextDto> GetRecommendationContextAsync(string userId, int historyLimit = 20, int candidateLimit = 30, CancellationToken cancellationToken = default)
+    {
+        await using var connection = new MySqlConnection(ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        var recentPlays = new List<MediaItemDto>();
+
+        const string historySql = @"
+SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.OwnerId, m.AlbumId,
+       a.Title AS AlbumTitle, art.Name AS ArtistName, a.CoverImageUrl
+FROM PlayHistories ph
+INNER JOIN MediaItems m ON m.Id = ph.MediaItemId
+LEFT JOIN Albums a ON a.Id = m.AlbumId
+LEFT JOIN Artists art ON art.Id = a.ArtistId
+WHERE ph.UserId = @UserId
+ORDER BY ph.PlayedAt DESC
+LIMIT @Limit;";
+
+        await using (var command = new MySqlCommand(historySql, connection))
+        {
+            command.Parameters.AddWithValue("@UserId", userId);
+            command.Parameters.AddWithValue("@Limit", Math.Clamp(historyLimit, 1, 50));
+
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                recentPlays.Add(MapMediaItem(reader));
+            }
+        }
+
+        var candidateItems = new List<MediaItemDto>();
+
+        const string candidatesSql = @"
+SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.OwnerId, m.AlbumId,
+       a.Title AS AlbumTitle, art.Name AS ArtistName, a.CoverImageUrl
+FROM MediaItems m
+LEFT JOIN Albums a ON a.Id = m.AlbumId
+LEFT JOIN Artists art ON art.Id = a.ArtistId
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM PlayHistories ph
+    WHERE ph.UserId = @UserId AND ph.MediaItemId = m.Id
+)
+ORDER BY m.CreatedAt DESC
+LIMIT @Limit;";
+
+        await using (var command = new MySqlCommand(candidatesSql, connection))
+        {
+            command.Parameters.AddWithValue("@UserId", userId);
+            command.Parameters.AddWithValue("@Limit", Math.Clamp(candidateLimit, 1, 100));
+
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                candidateItems.Add(MapMediaItem(reader));
+            }
+        }
+
+        return new RecommendationContextDto(recentPlays, candidateItems);
     }
 }
 

@@ -1,5 +1,6 @@
 using Backend.Data;
 using Backend.Hubs;
+using Backend.Services;
 using Backend.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -10,6 +11,7 @@ namespace Backend.Controllers;
 [Route("api")]
 public sealed class SocialController(
     IMusicCatalogRepository repository,
+    IClaudeRecommendationService recommendationService,
     IHubContext<NotificationHub> hubContext) : ControllerBase
 {
     [HttpPost("play-histories")]
@@ -61,5 +63,27 @@ public sealed class SocialController(
             .SendAsync("NotificationReceived", notification, cancellationToken);
 
         return Ok(notification);
+    }
+    
+    [HttpGet("recommendations/ai")]
+    public async Task<ActionResult<IReadOnlyList<SongRecommendationDto>>> GetAiRecommendations(
+        [FromQuery] string userId,
+        [FromQuery] int count = 5,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return BadRequest("UserId is required.");
+        }
+
+        try
+        {
+            var recommendations = await recommendationService.RecommendSongsAsync(userId, count, cancellationToken);
+            return Ok(recommendations);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("Claude API key", StringComparison.OrdinalIgnoreCase))
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, ex.Message);
+        }
     }
 }

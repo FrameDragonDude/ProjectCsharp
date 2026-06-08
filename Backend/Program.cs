@@ -1,4 +1,5 @@
 ﻿using Backend.Hubs;
+using Backend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,7 @@ builder.Services.AddScoped<Backend.Data.IMusicCatalogRepository, Backend.Data.My
 
 builder.Services.AddSignalR();
 
+builder.Services.AddHttpClient<IClaudeRecommendationService, ClaudeRecommendationService>();
 var app = builder.Build();
 
 app.UseSwagger();
