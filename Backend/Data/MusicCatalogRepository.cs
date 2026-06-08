@@ -2,6 +2,7 @@ using Backend.Models;
 using System.Globalization;
 using System.Text;
 using MySqlConnector;
+using System.Text.Json;
 
 namespace Backend.Data;
 
@@ -16,6 +17,9 @@ public interface IMusicCatalogRepository
     Task<PlaylistDto> CreatePlaylistAsync(CreatePlaylistRequest request, CancellationToken cancellationToken = default);
     Task AddMediaToPlaylistAsync(string playlistId, string mediaItemId, CancellationToken cancellationToken = default);
     Task<AlbumDto> CreateAlbumAsync(CreateAlbumRequest request, CancellationToken cancellationToken = default);
+
+    Task RecordPlayHistoryAsync(RecordPlayHistoryCommand command, CancellationToken cancellationToken = default);
+    Task<NotificationDto> ShareMediaAsync(ShareMediaCommand command, CancellationToken cancellationToken = default);
 }
 
 public sealed class MySqlMusicCatalogRepository(IConfiguration configuration) : IMusicCatalogRepository
@@ -433,4 +437,97 @@ ORDER BY p.CreatedAt DESC;";
                  ?? throw new InvalidOperationException($"Unable to convert column '{columnName}' to string.")
         };
     }
+
+    public async Task RecordPlayHistoryAsync(RecordPlayHistoryCommand command, CancellationToken cancellationToken = default)
+    {
+        await using var connection = new MySqlConnection(ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        const string sql = @"
+INSERT INTO PlayHistories (Id, UserId, MediaItemId)
+VALUES (@Id, @UserId, @MediaItemId);";
+
+        await using var dbCommand = new MySqlCommand(sql, connection);
+        dbCommand.Parameters.AddWithValue("@Id", Guid.NewGuid().ToString());
+        dbCommand.Parameters.AddWithValue("@UserId", command.UserId);
+        dbCommand.Parameters.AddWithValue("@MediaItemId", command.MediaItemId);
+
+        await dbCommand.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task<NotificationDto> ShareMediaAsync(ShareMediaCommand command, CancellationToken cancellationToken = default)
+    {
+        var hasMediaItem = !string.IsNullOrWhiteSpace(command.MediaItemId);
+        var hasPlaylist = !string.IsNullOrWhiteSpace(command.PlaylistId);
+
+        if (hasMediaItem == hasPlaylist)
+        {
+            throw new InvalidOperationException("Share exactly one item: MediaItemId or PlaylistId.");
+        }
+
+        var shareId = Guid.NewGuid().ToString();
+        var notificationId = Guid.NewGuid().ToString();
+        var createdAt = DateTime.Now;
+
+        var payload = JsonSerializer.Serialize(new
+        {
+            ShareId = shareId,
+            SenderUserId = command.SenderUserId,
+            MediaItemId = command.MediaItemId,
+            PlaylistId = command.PlaylistId,
+            Url = "/share-inbox"
+        });
+
+        await using var connection = new MySqlConnection(ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            const string shareSql = @"
+INSERT INTO MediaShares (Id, SenderUserId, ReceiverUserId, MediaItemId, PlaylistId)
+VALUES (@Id, @SenderUserId, @ReceiverUserId, @MediaItemId, @PlaylistId);";
+
+            await using (var shareCommand = new MySqlCommand(shareSql, connection, transaction))
+            {
+                shareCommand.Parameters.AddWithValue("@Id", shareId);
+                shareCommand.Parameters.AddWithValue("@SenderUserId", command.SenderUserId);
+                shareCommand.Parameters.AddWithValue("@ReceiverUserId", command.ReceiverUserId);
+                shareCommand.Parameters.AddWithValue("@MediaItemId", (object?)command.MediaItemId ?? DBNull.Value);
+                shareCommand.Parameters.AddWithValue("@PlaylistId", (object?)command.PlaylistId ?? DBNull.Value);
+
+                await shareCommand.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            const string notificationSql = @"
+INSERT INTO Notifications (Id, UserId, Type, PayloadJson, IsRead, CreatedAt)
+VALUES (@Id, @UserId, 'Share', @PayloadJson, 0, @CreatedAt);";
+
+            await using (var notificationCommand = new MySqlCommand(notificationSql, connection, transaction))
+            {
+                notificationCommand.Parameters.AddWithValue("@Id", notificationId);
+                notificationCommand.Parameters.AddWithValue("@UserId", command.ReceiverUserId);
+                notificationCommand.Parameters.AddWithValue("@PayloadJson", payload);
+                notificationCommand.Parameters.AddWithValue("@CreatedAt", createdAt);
+
+                await notificationCommand.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+            return new NotificationDto(
+                notificationId,
+                command.ReceiverUserId,
+                "Share",
+                payload,
+                false,
+                createdAt);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
 }
+

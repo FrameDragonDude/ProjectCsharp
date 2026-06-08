@@ -48,3 +48,20 @@ public sealed record CreatePlaylistRequest(string Name, string? Description, str
 public sealed record AddTrackRequest(string MediaItemId);
 
 public sealed record CreateAlbumRequest(string Title, string ArtistName, string? CoverImageUrl, string? ReleaseDate);
+
+public sealed record RecordPlayHistoryCommand(string UserId, string MediaItemId);
+
+public sealed record ShareMediaCommand(
+    string SenderUserId,
+    string ReceiverUserId,
+    string? MediaItemId,
+    string? PlaylistId);
+
+public sealed record NotificationDto(
+    string Id,
+    string UserId,
+    string Type,
+    string PayloadJson,
+    bool IsRead,
+    DateTime CreatedAt);
+

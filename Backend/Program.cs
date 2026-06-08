@@ -1,4 +1,6 @@
-﻿var builder = WebApplication.CreateBuilder(args);
+﻿using Backend.Hubs;
+
+var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -15,6 +17,8 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddScoped<Backend.Data.IMusicCatalogRepository, Backend.Data.MySqlMusicCatalogRepository>();
 
+builder.Services.AddSignalR();
+
 var app = builder.Build();
 
 app.UseSwagger();
@@ -24,5 +28,7 @@ app.UseHttpsRedirection();
 app.UseCors("Frontend");
 
 app.MapControllers();
+
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.Run();

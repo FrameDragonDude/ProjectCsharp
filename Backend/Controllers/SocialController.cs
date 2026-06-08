@@ -1,0 +1,65 @@
+using Backend.Data;
+using Backend.Hubs;
+using Backend.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+
+namespace Backend.Controllers;
+
+[ApiController]
+[Route("api")]
+public sealed class SocialController(
+    IMusicCatalogRepository repository,
+    IHubContext<NotificationHub> hubContext) : ControllerBase
+{
+    [HttpPost("play-histories")]
+    public async Task<IActionResult> RecordPlayHistory(
+        [FromBody] RecordPlayHistoryCommand command,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(command.UserId))
+        {
+            return BadRequest("UserId is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(command.MediaItemId))
+        {
+            return BadRequest("MediaItemId is required.");
+        }
+
+        await repository.RecordPlayHistoryAsync(command, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("media-shares")]
+    public async Task<ActionResult<NotificationDto>> ShareMedia(
+        [FromBody] ShareMediaCommand command,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(command.SenderUserId))
+        {
+            return BadRequest("SenderUserId is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(command.ReceiverUserId))
+        {
+            return BadRequest("ReceiverUserId is required.");
+        }
+
+        var hasMediaItem = !string.IsNullOrWhiteSpace(command.MediaItemId);
+        var hasPlaylist = !string.IsNullOrWhiteSpace(command.PlaylistId);
+
+        if (hasMediaItem == hasPlaylist)
+        {
+            return BadRequest("Send exactly one of MediaItemId or PlaylistId.");
+        }
+
+        var notification = await repository.ShareMediaAsync(command, cancellationToken);
+
+        await hubContext.Clients
+            .Group($"user:{command.ReceiverUserId}")
+            .SendAsync("NotificationReceived", notification, cancellationToken);
+
+        return Ok(notification);
+    }
+}
