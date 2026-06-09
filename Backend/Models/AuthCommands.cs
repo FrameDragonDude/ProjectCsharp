@@ -1,10 +1,18 @@
 using Backend.Data.Security;
 using MediatR;
 using MySqlConnector;
+using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Models
 {
-    public sealed record RegisterCommand(string Username, string Email, string Password, string FullName) : IRequest<string>;
+    public sealed record RegisterCommand(
+        [Required(ErrorMessage = "Tên đăng nhập không được để trống")] string Username, 
+        [Required(ErrorMessage = "Email không được để trống")]
+        [EmailAddress(ErrorMessage = "Email không đúng định dạng! Vui lòng nhập lại.")] string Email, 
+        [MinLength(6, ErrorMessage = "Mật khẩu phải có ít nhất 6 ký tự để đảm bảo an toàn.")]
+        string Password, 
+        [Required(ErrorMessage = "Họ và tên không được để trống")] string FullName
+    ) : IRequest<string>;
 
     public class RegisterCommandHandler : IRequestHandler<RegisterCommand, string>
     {
@@ -75,7 +83,10 @@ namespace Backend.Models
         }
     }
 
-    public sealed record LoginCommand(string EmailOrUsername, string Password) : IRequest<string>;
+    public sealed record LoginCommand(
+        [Required(ErrorMessage = "Email hoặc tên đăng nhập không được để trống")] string EmailOrUsername,
+        [Required(ErrorMessage = "Mật khẩu không được để trống")] string Password
+    ) : IRequest<string>;
 
     public class LoginCommandHandler : IRequestHandler<LoginCommand, string>
     {
