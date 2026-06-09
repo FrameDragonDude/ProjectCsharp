@@ -1,9 +1,22 @@
 using MediatR;
 using MySqlConnector;
+using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Models
 {
-    public sealed record UpdateProfileCommand(string UserId, string FullName, string Bio, string? AvatarUrl) : IRequest<bool>;
+    public sealed record UpdateProfileCommand(
+        [Required] string UserId, 
+        
+        [Required(ErrorMessage = "Tên hiển thị không được để trống.")]
+        [MaxLength(35, ErrorMessage = "Tên hiển thị không được vượt quá 35 ký tự.")]
+        string FullName, 
+        
+        [MaxLength(200, ErrorMessage = "Tiểu sử không được vượt quá 200 ký tự.")]
+        string? Bio, 
+        
+        //[Url(ErrorMessage = "Đường dẫn ảnh đại diện không hợp lệ.")]
+        string? AvatarUrl
+    ) : IRequest<bool>;
 
     public class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileCommand, bool>
     {
@@ -33,7 +46,14 @@ namespace Backend.Models
     }
 
 
-    public sealed record ToggleFollowCommand(string FollowerId, string TargetId, string TargetType) : IRequest<string>;
+    public sealed record ToggleFollowCommand(
+        [Required] string FollowerId, 
+        [Required(ErrorMessage = "Mã đối tượng theo dõi không được để trống.")] 
+        string TargetId,
+        [Required]
+        [RegularExpression("^(User|Artist)$", ErrorMessage = "Loại đối tượng (TargetType) chỉ được phép là 'User' hoặc 'Artist'.")]
+        string TargetType
+    ) : IRequest<string>;
 
     public class ToggleFollowCommandHandler : IRequestHandler<ToggleFollowCommand, string>
     {
