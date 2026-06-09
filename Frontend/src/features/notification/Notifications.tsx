@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Bell, Share2, UserPlus, Music, Check, Circle } from 'lucide-react';
 
+
 // Định nghĩa kiểu dữ liệu cho Thông báo
 interface NotificationItem {
   id: string;

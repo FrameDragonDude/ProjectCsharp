@@ -6,6 +6,14 @@ import { resolveAssetUrl } from '../../utils/resolveAsset';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import type { Album as AlbumType, MediaItem } from '../../types';
 
+interface PlayHistory {
+  id: string;
+  mediaItemId: string;
+  mediaTitle?: string;
+  playedAt: string;
+
+}
+
 export default function Home() {
   const [songs, setSongs] = useState<MediaItem[]>([]);
   const [albums, setAlbums] = useState<AlbumType[]>([]);
@@ -13,6 +21,7 @@ export default function Home() {
   const [error, setError] = useState('');
   const playTrack = usePlayerStore((state) => state.playTrack);
   const openVideo = usePlayerStore((state) => state.openVideo);
+  const [recentSongs, setRecentSongs] = useState<PlayHistory[]>([]);
 
   useEffect(() => {
     void (async () => {
@@ -27,10 +36,61 @@ export default function Home() {
         setLoading(false);
       }
     })();
+      /*fetch('http://localhost:5000/api/Social/play-histories/2/recent')
+      .then(res => res.json())
+      .then(data => setRecentSongs(data))
+      .catch(err => console.error("Lỗi lấy lịch sử nhạc:", err));*/
+
+      const mockData: PlayHistory[] = [
+          {
+          id: "1",
+          mediaItemId: "item_001",
+          mediaTitle: "Futari no Kimochi",
+          playedAt: new Date().toISOString()
+      },
+      {
+          id: "2",
+          mediaItemId: "item_002",
+          mediaTitle: "Cơn Mưa Ngang Qua",
+          playedAt: new Date(Date.now() - 3600000).toISOString()
+      },
+      {
+          id: "3",
+          mediaItemId: "item_003",
+          mediaTitle: "Waiting For You",
+          playedAt: new Date(Date.now() - 7200000).toISOString()
+      }
+        ];
+        
+        // Nạp dữ liệu giả
+        setRecentSongs(mockData);
   }, []);
 
   return (
     <div className="p-6 space-y-10 text-white">
+      <h1 className="text-3xl font-bold mb-4">Trang chủ</h1>
+
+      <section>
+        <h2 className="text-xl font-bold mb-4">Nghe gần đây</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {recentSongs.map((song) => (
+            <div key={song.id} className="bg-zinc-800/40 p-4 rounded-lg hover:bg-zinc-800 transition cursor-pointer">
+              <img 
+                src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=150" 
+                alt="cover" 
+                className="w-full aspect-square object-cover rounded-md mb-3 shadow-lg" 
+              />
+              <h3 className="font-semibold truncate">
+                {song.mediaTitle || `Bài hát ${song.mediaItemId.substring(0,4)}`}
+              </h3>
+              <p className="text-sm text-gray-400 mt-1">
+                Đã nghe: {new Date(song.playedAt).toLocaleTimeString()}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section>
         <div className="flex items-end justify-between gap-4 mb-4">
           <div>
