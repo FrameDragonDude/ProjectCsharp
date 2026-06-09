@@ -14,8 +14,8 @@ interface NotificationItem {
 
 export default function Notifications() {
   // Dữ liệu mẫu
-  const [notifications, setNotifications] = useState<NotificationItem[]>([
-    {
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+    /*{
       id: '1',
       type: 'share',
       content: 'đã chia sẻ playlist "Nhạc code đêm khuya" với bạn.',
@@ -47,7 +47,7 @@ export default function Notifications() {
       time: '3 ngày trước',
       isRead: true,
     }
-  ]);
+  ]);*/
 
   // Đếm số thông báo chưa đọc
   const unreadCount = notifications.filter(n => !n.isRead).length;
@@ -71,6 +71,33 @@ export default function Notifications() {
       case 'follow': return <UserPlus size={20} className="text-green-400" />;
       case 'system': return <Music size={20} className="text-purple-400" />;
       default: return <Bell size={20} className="text-neutral-400" />;
+    }
+  };
+
+  const parsePayload = (type: string, jsonString: string) => {
+    try {
+      const payload = JSON.parse(jsonString);
+      switch (type) {
+        case 'ShareSong':
+          return (
+            <span>
+              <strong className="text-white">{payload.senderName}</strong> đã chia sẻ bài hát 
+              <strong className="text-green-400"> {payload.songTitle}</strong> với bạn.
+            </span>
+          );
+        case 'Follow':
+          return (
+            <span>
+              <strong className="text-white">{payload.senderName}</strong> đã bắt đầu theo dõi bạn.
+            </span>
+          );
+        case 'System':
+          return <span>{payload.message}</span>;
+        default:
+          return <span>Bạn có một thông báo mới.</span>;
+      }
+    } catch {
+      return <span>Bạn có một thông báo mới.</span>;
     }
   };
 

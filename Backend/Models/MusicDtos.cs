@@ -49,4 +49,31 @@ public sealed record CreatePlaylistRequest(string Name, string? Description, str
 public sealed record AddTrackRequest(string MediaItemId);
 
 public sealed record CreateAlbumRequest(string Title, string ArtistName, string? CoverImageUrl, string? ReleaseDate);
+<<<<<<< HEAD
 public sealed record UpdateAlbumCoverRequest(string? CoverImageUrl);
+=======
+
+public sealed record RecordPlayHistoryCommand(string UserId, string MediaItemId);
+
+public sealed record ShareMediaCommand(
+    string SenderUserId,
+    string ReceiverUserId,
+    string? MediaItemId,
+    string? PlaylistId);
+
+public sealed record NotificationDto(
+    string Id,
+    string UserId,
+    string Type,
+    string PayloadJson,
+    bool IsRead,
+    DateTime CreatedAt);
+
+public sealed record RecommendationContextDto(
+    IReadOnlyList<MediaItemDto> RecentPlays,
+    IReadOnlyList<MediaItemDto> CandidateItems);
+
+public sealed record SongRecommendationDto(
+    MediaItemDto Item,
+    string Reason);
+>>>>>>> 8cca062877176187e075980ff8b77cad7dfa80c5

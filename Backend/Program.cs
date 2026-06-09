@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 ﻿using Microsoft.EntityFrameworkCore;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+=======
+﻿using Backend.Hubs;
+using Backend.Services;
+>>>>>>> 8cca062877176187e075980ff8b77cad7dfa80c5
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +42,9 @@ builder.Services.AddTransient<System.Data.IDbConnection>(sp =>
 // Register Dapper helper
 builder.Services.AddTransient<Backend.Infrastructure.DapperQueries>();
 
+builder.Services.AddSignalR();
+
+builder.Services.AddHttpClient<IClaudeRecommendationService, ClaudeRecommendationService>();
 var app = builder.Build();
 
 app.UseSwagger();
@@ -46,5 +54,7 @@ app.UseHttpsRedirection();
 app.UseCors("Frontend");
 
 app.MapControllers();
+
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.Run();

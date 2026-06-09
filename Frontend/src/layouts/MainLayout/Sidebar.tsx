@@ -35,7 +35,6 @@ export default function Sidebar() {
           <Bell size={24} />
           <span className="font-semibold">Thông báo</span>
         </Link>
-
       </nav>
 
       <div className="mt-auto pt-6 border-t border-neutral-800">

@@ -2,6 +2,7 @@ using Backend.Models;
 using System.Globalization;
 using System.Text;
 using MySqlConnector;
+using System.Text.Json;
 
 namespace Backend.Data;
 
@@ -16,9 +17,16 @@ public interface IMusicCatalogRepository
     Task<PlaylistDto> CreatePlaylistAsync(CreatePlaylistRequest request, CancellationToken cancellationToken = default);
     Task AddMediaToPlaylistAsync(string playlistId, string mediaItemId, CancellationToken cancellationToken = default);
     Task<AlbumDto> CreateAlbumAsync(CreateAlbumRequest request, CancellationToken cancellationToken = default);
+<<<<<<< HEAD
     Task<AlbumDto?> UpdateAlbumCoverAsync(string albumId, string? coverImageUrl, CancellationToken cancellationToken = default);
     Task<MediaItemDto?> UpdateMediaCoverAsync(string mediaItemId, string? coverImageUrl, CancellationToken cancellationToken = default);
     Task<bool> AssignMediaToAlbumAsync(string albumId, string mediaItemId, CancellationToken cancellationToken = default);
+=======
+
+    Task RecordPlayHistoryAsync(RecordPlayHistoryCommand command, CancellationToken cancellationToken = default);
+    Task<NotificationDto> ShareMediaAsync(ShareMediaCommand command, CancellationToken cancellationToken = default);
+    Task<RecommendationContextDto> GetRecommendationContextAsync(string userId, int historyLimit = 20, int candidateLimit = 30, CancellationToken cancellationToken = default);
+>>>>>>> 8cca062877176187e075980ff8b77cad7dfa80c5
 }
 
 public sealed class MySqlMusicCatalogRepository(IConfiguration configuration) : IMusicCatalogRepository
@@ -547,4 +555,158 @@ ORDER BY p.CreatedAt DESC;";
                  ?? throw new InvalidOperationException($"Unable to convert column '{columnName}' to string.")
         };
     }
+
+    public async Task RecordPlayHistoryAsync(RecordPlayHistoryCommand command, CancellationToken cancellationToken = default)
+    {
+        await using var connection = new MySqlConnection(ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        const string sql = @"
+INSERT INTO PlayHistories (Id, UserId, MediaItemId)
+VALUES (@Id, @UserId, @MediaItemId);";
+
+        await using var dbCommand = new MySqlCommand(sql, connection);
+        dbCommand.Parameters.AddWithValue("@Id", Guid.NewGuid().ToString());
+        dbCommand.Parameters.AddWithValue("@UserId", command.UserId);
+        dbCommand.Parameters.AddWithValue("@MediaItemId", command.MediaItemId);
+
+        await dbCommand.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task<NotificationDto> ShareMediaAsync(ShareMediaCommand command, CancellationToken cancellationToken = default)
+    {
+        var hasMediaItem = !string.IsNullOrWhiteSpace(command.MediaItemId);
+        var hasPlaylist = !string.IsNullOrWhiteSpace(command.PlaylistId);
+
+        if (hasMediaItem == hasPlaylist)
+        {
+            throw new InvalidOperationException("Share exactly one item: MediaItemId or PlaylistId.");
+        }
+
+        var shareId = Guid.NewGuid().ToString();
+        var notificationId = Guid.NewGuid().ToString();
+        var createdAt = DateTime.Now;
+
+        var payload = JsonSerializer.Serialize(new
+        {
+            ShareId = shareId,
+            SenderUserId = command.SenderUserId,
+            MediaItemId = command.MediaItemId,
+            PlaylistId = command.PlaylistId,
+            Url = "/share-inbox"
+        });
+
+        await using var connection = new MySqlConnection(ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            const string shareSql = @"
+INSERT INTO MediaShares (Id, SenderUserId, ReceiverUserId, MediaItemId, PlaylistId)
+VALUES (@Id, @SenderUserId, @ReceiverUserId, @MediaItemId, @PlaylistId);";
+
+            await using (var shareCommand = new MySqlCommand(shareSql, connection, transaction))
+            {
+                shareCommand.Parameters.AddWithValue("@Id", shareId);
+                shareCommand.Parameters.AddWithValue("@SenderUserId", command.SenderUserId);
+                shareCommand.Parameters.AddWithValue("@ReceiverUserId", command.ReceiverUserId);
+                shareCommand.Parameters.AddWithValue("@MediaItemId", (object?)command.MediaItemId ?? DBNull.Value);
+                shareCommand.Parameters.AddWithValue("@PlaylistId", (object?)command.PlaylistId ?? DBNull.Value);
+
+                await shareCommand.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            const string notificationSql = @"
+INSERT INTO Notifications (Id, UserId, Type, PayloadJson, IsRead, CreatedAt)
+VALUES (@Id, @UserId, 'Share', @PayloadJson, 0, @CreatedAt);";
+
+            await using (var notificationCommand = new MySqlCommand(notificationSql, connection, transaction))
+            {
+                notificationCommand.Parameters.AddWithValue("@Id", notificationId);
+                notificationCommand.Parameters.AddWithValue("@UserId", command.ReceiverUserId);
+                notificationCommand.Parameters.AddWithValue("@PayloadJson", payload);
+                notificationCommand.Parameters.AddWithValue("@CreatedAt", createdAt);
+
+                await notificationCommand.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+            return new NotificationDto(
+                notificationId,
+                command.ReceiverUserId,
+                "Share",
+                payload,
+                false,
+                createdAt);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
+    public async Task<RecommendationContextDto> GetRecommendationContextAsync(string userId, int historyLimit = 20, int candidateLimit = 30, CancellationToken cancellationToken = default)
+    {
+        await using var connection = new MySqlConnection(ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        var recentPlays = new List<MediaItemDto>();
+
+        const string historySql = @"
+SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.OwnerId, m.AlbumId,
+       a.Title AS AlbumTitle, art.Name AS ArtistName, a.CoverImageUrl
+FROM PlayHistories ph
+INNER JOIN MediaItems m ON m.Id = ph.MediaItemId
+LEFT JOIN Albums a ON a.Id = m.AlbumId
+LEFT JOIN Artists art ON art.Id = a.ArtistId
+WHERE ph.UserId = @UserId
+ORDER BY ph.PlayedAt DESC
+LIMIT @Limit;";
+
+        await using (var command = new MySqlCommand(historySql, connection))
+        {
+            command.Parameters.AddWithValue("@UserId", userId);
+            command.Parameters.AddWithValue("@Limit", Math.Clamp(historyLimit, 1, 50));
+
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                recentPlays.Add(MapMediaItem(reader));
+            }
+        }
+
+        var candidateItems = new List<MediaItemDto>();
+
+        const string candidatesSql = @"
+SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.OwnerId, m.AlbumId,
+       a.Title AS AlbumTitle, art.Name AS ArtistName, a.CoverImageUrl
+FROM MediaItems m
+LEFT JOIN Albums a ON a.Id = m.AlbumId
+LEFT JOIN Artists art ON art.Id = a.ArtistId
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM PlayHistories ph
+    WHERE ph.UserId = @UserId AND ph.MediaItemId = m.Id
+)
+ORDER BY m.CreatedAt DESC
+LIMIT @Limit;";
+
+        await using (var command = new MySqlCommand(candidatesSql, connection))
+        {
+            command.Parameters.AddWithValue("@UserId", userId);
+            command.Parameters.AddWithValue("@Limit", Math.Clamp(candidateLimit, 1, 100));
+
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                candidateItems.Add(MapMediaItem(reader));
+            }
+        }
+
+        return new RecommendationContextDto(recentPlays, candidateItems);
+    }
 }
+
