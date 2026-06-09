@@ -9,8 +9,10 @@ namespace Backend.Models
         [Required(ErrorMessage = "Tên đăng nhập không được để trống")] string Username, 
         [Required(ErrorMessage = "Email không được để trống")]
         [EmailAddress(ErrorMessage = "Email không đúng định dạng! Vui lòng nhập lại.")] string Email, 
-        [MinLength(6, ErrorMessage = "Mật khẩu phải có ít nhất 6 ký tự để đảm bảo an toàn.")]
-        string Password, 
+        [MinLength(6, ErrorMessage = "Mật khẩu phải có ít nhất 6 ký tự.")]
+        [RegularExpression(@"^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_]).+$", 
+            ErrorMessage = "Mật khẩu phải bao gồm ít nhất 1 chữ cái, 1 chữ số và 1 ký tự đặc biệt.")]
+        string Password,
         [Required(ErrorMessage = "Họ và tên không được để trống")] string FullName
     ) : IRequest<string>;
 
