@@ -49,9 +49,7 @@ public sealed record CreatePlaylistRequest(string Name, string? Description, str
 public sealed record AddTrackRequest(string MediaItemId);
 
 public sealed record CreateAlbumRequest(string Title, string ArtistName, string? CoverImageUrl, string? ReleaseDate);
-<<<<<<< HEAD
 public sealed record UpdateAlbumCoverRequest(string? CoverImageUrl);
-=======
 
 public sealed record RecordPlayHistoryCommand(string UserId, string MediaItemId);
 
@@ -76,4 +74,10 @@ public sealed record RecommendationContextDto(
 public sealed record SongRecommendationDto(
     MediaItemDto Item,
     string Reason);
->>>>>>> 8cca062877176187e075980ff8b77cad7dfa80c5
+
+public sealed record PlayHistoryDto(
+    string Id,
+    string MediaItemId,
+    string? MediaTitle,
+    DateTime PlayedAt
+);

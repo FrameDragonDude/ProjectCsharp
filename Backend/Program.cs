@@ -1,10 +1,7 @@
-<<<<<<< HEAD
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
-=======
-﻿using Backend.Hubs;
+using Backend.Hubs;
 using Backend.Services;
->>>>>>> 8cca062877176187e075980ff8b77cad7dfa80c5
 
 var builder = WebApplication.CreateBuilder(args);
 
