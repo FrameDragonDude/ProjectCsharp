@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Identity;
-
 namespace Backend.Data.Security
 {
     public interface IPasswordHasher
@@ -10,14 +8,21 @@ namespace Backend.Data.Security
 
     public class PasswordHasher : IPasswordHasher
     {
-        private readonly PasswordHasher<object> _hasher = new PasswordHasher<object>();
-
-        public string HashPassword(string password) => _hasher.HashPassword(new object(), password);
+        public string HashPassword(string password)
+        {
+            return BCrypt.Net.BCrypt.HashPassword(password);
+        }
 
         public bool VerifyPassword(string password, string passwordHash)
         {
-            var result = _hasher.VerifyHashedPassword(new object(), passwordHash, password);
-            return result == PasswordVerificationResult.Success;
+            try 
+            {
+                return BCrypt.Net.BCrypt.Verify(password, passwordHash);
+            }
+            catch (BCrypt.Net.SaltParseException)
+            {
+                return false; 
+            }
         }
     }
 }
