@@ -1,8 +1,18 @@
 import { Home, Search, Library, Bell, User, Send } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useNotificationStore } from '../../store/useNotificationStore';
+import { useEffect } from 'react';
 
 
 export default function Sidebar() {
+  //mock Data
+  const {unreadCount, connectSignalR, fetchNotifications} = useNotificationStore(); 
+  const currentUser = "22222222-2222-2222-2222-222222222222"; 
+
+  useEffect (() => {
+    fetchNotifications(currentUser);
+    connectSignalR(currentUser);
+  },[])
   return (
     <aside className="w-60 bg-black flex flex-col p-6 space-y-8">
       {/* Logo */}
@@ -31,8 +41,15 @@ export default function Sidebar() {
           <Send size={24} />
           <span className="font-semibold">Hộp thư chia sẻ</span>
         </Link>
-        <Link to="/notifications" className="flex items-center space-x-4 text-neutral-400 hover:text-white transition-colors duration-200 mt-6">
+        <Link to="/notifications" className="flex items-center space-x-4 text-neutral-400 hover:text-white transition-colors duration-200 mt-6 relative">
+          <div className="relative">
           <Bell size={24} />
+          {unreadCount > 0  && (
+            <span className = " absolute -top1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+          </div>
           <span className="font-semibold">Thông báo</span>
         </Link>
       </nav>

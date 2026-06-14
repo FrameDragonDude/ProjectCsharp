@@ -593,6 +593,7 @@ VALUES (@Id, @UserId, @MediaItemId);";
         {
             ShareId = shareId,
             SenderUserId = command.SenderUserId,
+            SenderName = command.SenderName,
             MediaItemId = command.MediaItemId,
             PlaylistId = command.PlaylistId,
             Url = "/share-inbox"

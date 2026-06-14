@@ -57,7 +57,8 @@ public sealed record ShareMediaCommand(
     string SenderUserId,
     string ReceiverUserId,
     string? MediaItemId,
-    string? PlaylistId);
+    string? PlaylistId,
+    string ? SenderName);
 
 public sealed record NotificationDto(
     string Id,
