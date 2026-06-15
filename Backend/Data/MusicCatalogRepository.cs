@@ -776,12 +776,14 @@ LIMIT @Limit;";
         await connection.OpenAsync(cancellationToken);
 
         const string sql = @"
-        SELECT ph.id, ph.mediaItemId, m.Title AS MediaTitle, ph.PlayedAt
+        SELECT MAX(ph.Id) AS Id, ph.MediaItemId, m.Title AS MediaTitle, MAX(ph.PlayedAt) AS PlayedAt
         FROM PlayHistories ph
         INNER JOIN MediaItems m ON ph.MediaItemId = m.Id
         WHERE ph.UserId = @UserId
-        ORDER BY ph.PlayedAt DESC LIMIT @Limit;";
-
+        GROUP BY ph.MediaItemId, m.Title
+        ORDER BY PlayedAt DESC 
+        LIMIT @Limit;";
+        
         await using var command = new MySqlCommand(sql,connection);
         command.Parameters.AddWithValue("@UserId", userId);
         command.Parameters.AddWithValue("@Limit", limit);
