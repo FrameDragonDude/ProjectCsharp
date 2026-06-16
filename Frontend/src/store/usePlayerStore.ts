@@ -1,6 +1,22 @@
 import { create } from 'zustand';
 import type { MediaItem } from '../types';
 
+const API_BASE_URL = 'http://localhost:5000/api';
+const currentUser ="22222222-2222-2222-2222-222222222222";
+
+const recordPlayHistory = (mediaItemId: string) => {
+	fetch(`${API_BASE_URL}/play-histories`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({
+			userId: currentUser,
+			mediaItemId: mediaItemId
+		})
+	}).catch(err => console.error("Lỗi khi lưu lịch sử nghe:", err));
+};
+
 interface PlayerState {
 	currentTrack: MediaItem | null;
 	isVideoOpen: boolean;
@@ -33,16 +49,21 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 	volume: 0.8,
 	progress: 0,
 	duration: 0,
-	playTrack: (track, queue) => set({
+	playTrack: (track, queue) => {
+		console.log("Đã bấm nút Play! Đang chuẩn bị gọi API cho bài:", track.id); //test thu
+		recordPlayHistory(track.id); // goi api luu lichsu
+		set({
 		currentTrack: track,
 		queue: queue ?? [track],
 		queueIndex: queue?.findIndex((item) => item.id === track.id) ?? 0,
 		isPlaying: true,
 		progress: 0,
 		duration: 0,
-	}),
+	});
+},
 	playQueue: (tracks, startIndex = 0) => {
 		const nextTrack = tracks[startIndex] ?? null;
+		if(nextTrack) recordPlayHistory(nextTrack.id);
 
 		set({
 			currentTrack: nextTrack,
@@ -53,7 +74,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 			duration: 0,
 		});
 	},
-	openVideo: (track) => set({ currentTrack: track, isVideoOpen: true, isPlaying: false, progress: 0, duration: 0 }),
+	openVideo: (track) => { 
+		recordPlayHistory(track.id);
+		set({ currentTrack: track, isVideoOpen: true, isPlaying: false, progress: 0, duration: 0 }); 
+	},
 	closeVideo: () => set({ isVideoOpen: false }),
 	pause: () => set({ isPlaying: false }),
 	resume: () => set({ isPlaying: Boolean(get().currentTrack) }),
@@ -62,6 +86,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 		const { queue, queueIndex } = get();
 		const nextIndex = queueIndex + 1;
 		const nextTrack = queue[nextIndex] ?? null;
+
+		if (nextTrack) recordPlayHistory(nextTrack.id);
 
 		set({
 			currentTrack: nextTrack,
@@ -74,6 +100,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 		const { queue, queueIndex } = get();
 		const previousIndex = Math.max(queueIndex - 1, 0);
 		const previousTrack = queue[previousIndex] ?? null;
+
+		if (previousTrack) recordPlayHistory(previousTrack.id);
 
 		set({
 			currentTrack: previousTrack,

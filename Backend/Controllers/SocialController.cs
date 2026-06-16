@@ -86,4 +86,37 @@ public sealed class SocialController(
             return StatusCode(StatusCodes.Status503ServiceUnavailable, ex.Message);
         }
     }
+
+    [HttpGet("notifications")]
+    public async Task<ActionResult<IReadOnlyList<NotificationDto>>> GetNotifications(
+        [FromQuery] string userId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(userId)) return BadRequest("UserId is required ");
+        {
+            return Ok(await repository.GetNotificationsAsync(userId, cancellationToken));
+        }
+    }
+
+    [HttpPatch("notifications/{id}/read")]
+    public async Task<ActionResult> MarAsRead(string id, CancellationToken cancellationToken)
+    {
+        await repository.MarkNotificationAsReadAsync(id, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPatch("notifications/read-all")]
+    public async Task<ActionResult> MarkAllAsRead([FromQuery] string userId, CancellationToken cancellationToken)
+    {
+        if(string.IsNullOrWhiteSpace(userId)) return BadRequest("UserId is required");
+        await repository.MarkAllNotificationsAsReadAsync(userId, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpGet("play-histories/{userId}/recent")]
+    public async Task<ActionResult<IReadOnlyList<PlayHistoryDto>>> GetRecentPlayHistories(
+        string userId, CancellationToken cancellationToken)
+    {
+        return Ok(await repository.GetRecentPlayHistoriesAsync(userId, 10, cancellationToken));
+    }
+
 }

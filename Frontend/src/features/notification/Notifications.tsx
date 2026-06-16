@@ -1,67 +1,11 @@
-import { useState } from 'react';
 import { Bell, Share2, UserPlus, Music, Check, Circle } from 'lucide-react';
+import { useNotificationStore } from '../../store/useNotificationStore';
 
 // Định nghĩa kiểu dữ liệu cho Thông báo
-interface NotificationItem {
-  id: string;
-  type: 'share' | 'follow' | 'system';
-  content: string;
-  sender: string;
-  time: string;
-  isRead: boolean;
-}
 
 export default function Notifications() {
-  // Dữ liệu mẫu
-  const [notifications, setNotifications] = useState<NotificationItem[]>([
-    {
-      id: '1',
-      type: 'share',
-      content: 'đã chia sẻ playlist "Nhạc code đêm khuya" với bạn.',
-      sender: 'Tuấn Ngọc',
-      time: '2 phút trước',
-      isRead: false,
-    },
-    {
-      id: '2',
-      type: 'follow',
-      content: 'đã bắt đầu theo dõi bạn.',
-      sender: 'Lan Anh',
-      time: '1 giờ trước',
-      isRead: false,
-    },
-    {
-      id: '3',
-      type: 'share',
-      content: 'đã gửi cho bạn bài hát "Noi Dau Muon Mang".',
-      sender: 'Hải Đăng',
-      time: 'Hôm qua',
-      isRead: true,
-    },
-    {
-      id: '4',
-      type: 'system',
-      content: 'Chào mừng bạn đến với TuneVault! Hãy bắt đầu khám phá âm nhạc.',
-      sender: 'Hệ thống',
-      time: '3 ngày trước',
-      isRead: true,
-    }
-  ]);
-
-  // Đếm số thông báo chưa đọc
-  const unreadCount = notifications.filter(n => !n.isRead).length;
-
-  // Hàm đánh dấu 1 thông báo đã đọc
-  const markAsRead = (id: string) => {
-    setNotifications(prev => 
-      prev.map(notif => notif.id === id ? { ...notif, isRead: true } : notif)
-    );
-  };
-
-  // Hàm đánh dấu tất cả đã đọc
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(notif => ({ ...notif, isRead: true })));
-  };
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotificationStore();
+  const currentUser = "22222222-2222-2222-2222-222222222222";
 
   // Hàm chọn icon dựa trên loại thông báo
   const getIcon = (type: string) => {
@@ -71,6 +15,49 @@ export default function Notifications() {
       case 'system': return <Music size={20} className="text-purple-400" />;
       default: return <Bell size={20} className="text-neutral-400" />;
     }
+  };
+
+  const parsePayload = (type: string, jsonString: string) => {
+    try {
+      const payload = JSON.parse(jsonString);
+      
+      switch (type) {
+        case 'Share':
+          const isSong = payload.MediaItemId !== null && payload.MediaItemId !== undefined;
+          const senderName = payload.SenderName || payload.senderName || "Một người bạn";
+          
+          return (
+            <span>
+              <strong className="text-white">{senderName}</strong> vừa chia sẻ một 
+              {isSong ? " bài hát " : " playlist "} 
+              với bạn.
+            </span>
+          );
+          
+        case 'Follow':
+          const followerName = payload.SenderName || payload.senderName || "Ai đó";
+          return (
+            <span>
+              <strong className="text-white">{followerName}</strong> đã bắt đầu theo dõi bạn.
+            </span>
+          );
+          
+        case 'System':
+          return <span>{payload.message}</span>;
+          
+        default:
+          return <span>Bạn có một thông báo mới.</span>;
+      }
+    } catch {
+      return <span>Bạn có một thông báo mới.</span>;
+    }
+  };
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('vi-VN', { 
+      hour: '2-digit', minute: '2-digit', 
+      day: '2-digit', month: '2-digit', year: 'numeric' 
+    });
   };
 
   return (
@@ -86,7 +73,7 @@ export default function Notifications() {
         
         {unreadCount > 0 && (
           <button 
-            onClick={markAllAsRead}
+            onClick={() => markAllAsRead(currentUser)}
             className="flex items-center space-x-2 text-sm text-neutral-400 hover:text-white transition"
           >
             <Check size={16} />
@@ -116,9 +103,9 @@ export default function Notifications() {
               {/* Nội dung */}
               <div className="flex-1 min-w-0 pr-4">
                 <p className="text-base text-neutral-200">
-                  <span className="font-bold text-white">{notif.sender}</span> {notif.content}
+                  {parsePayload(notif.type, notif.payloadJson)}
                 </p>
-                <p className="text-sm text-neutral-500 mt-1">{notif.time}</p>
+                <p className="text-sm text-neutral-500 mt-1">{formatTime(notif.createdAt)}</p>
               </div>
 
               {/* Dấu chấm xanh (Unread indicator) */}

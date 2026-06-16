@@ -24,6 +24,10 @@ public interface IMusicCatalogRepository
     Task RecordPlayHistoryAsync(RecordPlayHistoryCommand command, CancellationToken cancellationToken = default);
     Task<NotificationDto> ShareMediaAsync(ShareMediaCommand command, CancellationToken cancellationToken = default);
     Task<RecommendationContextDto> GetRecommendationContextAsync(string userId, int historyLimit = 20, int candidateLimit = 30, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<NotificationDto>> GetNotificationsAsync(string userId, CancellationToken cancellationToken = default);
+    Task MarkNotificationAsReadAsync(string notificationId, CancellationToken cancellationToken = default);
+    Task MarkAllNotificationsAsReadAsync(string userId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<PlayHistoryDto>> GetRecentPlayHistoriesAsync(string userId, int limit = 10, CancellationToken cancellationToken = default);
 }
 
 public sealed class MySqlMusicCatalogRepository(IConfiguration configuration) : IMusicCatalogRepository
@@ -588,6 +592,7 @@ VALUES (@Id, @UserId, @MediaItemId);";
         {
             ShareId = shareId,
             SenderUserId = command.SenderUserId,
+            SenderName = command.SenderName,
             MediaItemId = command.MediaItemId,
             PlaylistId = command.PlaylistId,
             Url = "/share-inbox"
@@ -705,5 +710,96 @@ LIMIT @Limit;";
 
         return new RecommendationContextDto(recentPlays, candidateItems);
     }
+
+    public async Task<IReadOnlyList<NotificationDto>> GetNotificationsAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        await using var connection = new MySqlConnection(ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        const string sql = @"
+        SELECT Id, UserId, Type, PayloadJson, IsRead, CreatedAt
+        FROM Notifications
+        WHERE UserId = @UserId
+        ORDER BY CreatedAt DESC LIMIT 50; ";
+
+        await using var command = new MySqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@UserId", userId);
+
+        var items = new List<NotificationDto>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            items.Add( new NotificationDto( 
+                GetRequiredDbString(reader, "Id"),
+                GetRequiredDbString(reader, "UserId"),
+                reader.GetString("Type"),
+                reader.GetString("PayloadJson"),
+                reader.GetBoolean("IsRead"),
+                reader.GetDateTime("CreatedAt")
+            ));
+        }
+        return items;
+    }
+
+    public async Task MarkNotificationAsReadAsync(string notificationId, CancellationToken cancellationToken = default)
+    {
+        await using var connection = new MySqlConnection(ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        const string sql = @"
+        UPDATE Notifications SET IsRead = 1 WHERE Id = @Id;";
+
+        await using var command = new MySqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@Id", notificationId);
+
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task MarkAllNotificationsAsReadAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        await using var connection = new MySqlConnection(ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+        
+        const string sql = @"
+        UPDATE Notifications SET IsRead = 1 WHERE UserId = @UserId AND IsRead = 0;";
+
+        await using var command = new MySqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@UserId", userId);
+        await command. ExecuteNonQueryAsync(cancellationToken);
+        
+    }
+
+    public async Task<IReadOnlyList<PlayHistoryDto>> GetRecentPlayHistoriesAsync(string userId, int limit = 10, CancellationToken cancellationToken = default )
+    {
+        await using var connection = new MySqlConnection(ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        const string sql = @"
+        SELECT MAX(ph.Id) AS Id, ph.MediaItemId, m.Title AS MediaTitle, MAX(ph.PlayedAt) AS PlayedAt
+        FROM PlayHistories ph
+        INNER JOIN MediaItems m ON ph.MediaItemId = m.Id
+        WHERE ph.UserId = @UserId
+        GROUP BY ph.MediaItemId, m.Title
+        ORDER BY PlayedAt DESC 
+        LIMIT @Limit;";
+        
+        await using var command = new MySqlCommand(sql,connection);
+        command.Parameters.AddWithValue("@UserId", userId);
+        command.Parameters.AddWithValue("@Limit", limit);
+
+        var items = new List<PlayHistoryDto>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while(await reader.ReadAsync(cancellationToken))
+        {
+            items.Add(new PlayHistoryDto(
+                GetRequiredDbString(reader,"Id"),
+                GetRequiredDbString(reader,"MediaItemId"),
+                reader.IsDBNull(reader.GetOrdinal("MediaTitle")) ? null : reader.GetString("MediaTitle"),
+                reader.GetDateTime("PlayedAt")
+            ));
+        }
+        return items;
+    }
+
 }
 

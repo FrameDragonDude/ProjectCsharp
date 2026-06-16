@@ -57,7 +57,8 @@ public sealed record ShareMediaCommand(
     string SenderUserId,
     string ReceiverUserId,
     string? MediaItemId,
-    string? PlaylistId);
+    string? PlaylistId,
+    string ? SenderName);
 
 public sealed record NotificationDto(
     string Id,
@@ -74,3 +75,10 @@ public sealed record RecommendationContextDto(
 public sealed record SongRecommendationDto(
     MediaItemDto Item,
     string Reason);
+
+public sealed record PlayHistoryDto(
+    string Id,
+    string MediaItemId,
+    string? MediaTitle,
+    DateTime PlayedAt
+);
