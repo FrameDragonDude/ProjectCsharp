@@ -1,6 +1,9 @@
 using Backend.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using Backend.Hubs;
+using Backend.Services;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +13,7 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
     });
+
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -35,6 +39,9 @@ builder.Services.AddDbContext<TuneVaultDbContext>(options =>
     }
 });
 
+builder.Services.AddSignalR();
+
+builder.Services.AddHttpClient<IClaudeRecommendationService, ClaudeRecommendationService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -67,5 +74,7 @@ app.UseCors("Frontend");
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.Run();
