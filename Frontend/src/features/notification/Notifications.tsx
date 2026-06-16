@@ -1,11 +1,12 @@
 import { Bell, Share2, UserPlus, Music, Check, Circle } from 'lucide-react';
 import { useNotificationStore } from '../../store/useNotificationStore';
+import { useAuthStore } from "../../store/useAuthStore";
 
 // Định nghĩa kiểu dữ liệu cho Thông báo
 
 export default function Notifications() {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotificationStore();
-  const currentUser = "22222222-2222-2222-2222-222222222222";
+  const currentUser = useAuthStore((state)=> state.user?.id);
 
   // Hàm chọn icon dựa trên loại thông báo
   const getIcon = (type: string) => {
@@ -73,7 +74,9 @@ export default function Notifications() {
         
         {unreadCount > 0 && (
           <button 
-            onClick={() => markAllAsRead(currentUser)}
+            onClick={() =>{ 
+              if (currentUser) markAllAsRead(currentUser);
+            }}
             className="flex items-center space-x-2 text-sm text-neutral-400 hover:text-white transition"
           >
             <Check size={16} />

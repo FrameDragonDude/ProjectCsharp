@@ -5,6 +5,7 @@ import { getLibrarySummary } from "../../services/api/tuneVaultApi";
 import { resolveAssetUrl } from "../../utils/resolveAsset";
 import { usePlayerStore } from "../../store/usePlayerStore";
 import type { Album as AlbumType, MediaItem } from "../../types";
+import { useAuthStore } from "../../store/useAuthStore";
 
 interface PlayHistory {
   id: string;
@@ -22,7 +23,7 @@ export default function Home() {
   const openVideo = usePlayerStore((state) => state.openVideo);
   const [recentSongs, setRecentSongs] = useState<PlayHistory[]>([]);
 
-  const currentUser = "22222222-2222-2222-2222-222222222222"; // Mock user Id
+  const currentUser = useAuthStore((state)=> state.user?.id);
 
   useEffect(() => {
     void (async () => {

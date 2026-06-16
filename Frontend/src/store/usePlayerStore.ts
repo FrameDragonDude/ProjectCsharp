@@ -1,17 +1,20 @@
 import { create } from 'zustand';
 import type { MediaItem } from '../types';
+import { useAuthStore } from './useAuthStore';
 
 const API_BASE_URL = 'http://localhost:5000/api';
-const currentUser ="22222222-2222-2222-2222-222222222222";
 
 const recordPlayHistory = (mediaItemId: string) => {
+	const userId = useAuthStore.getState().user?.id;
+	if (!userId) return;
+
 	fetch(`${API_BASE_URL}/play-histories`, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json'
 		},
 		body: JSON.stringify({
-			userId: currentUser,
+			userId: userId,
 			mediaItemId: mediaItemId
 		})
 	}).catch(err => console.error("Lỗi khi lưu lịch sử nghe:", err));

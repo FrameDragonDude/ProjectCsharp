@@ -2,17 +2,20 @@ import { Home, Search, Library, Bell, User, Send } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { useEffect } from 'react';
+import { useAuthStore } from "../../store/useAuthStore";
 
 
 export default function Sidebar() {
   //mock Data
   const {unreadCount, connectSignalR, fetchNotifications} = useNotificationStore(); 
-  const currentUser = "22222222-2222-2222-2222-222222222222"; 
+  const currentUser = useAuthStore((state)=> state.user?.id); 
 
   useEffect (() => {
+    if (currentUser) {
     fetchNotifications(currentUser);
     connectSignalR(currentUser);
-  },[])
+  }
+}, [currentUser, fetchNotifications, connectSignalR]);
   return (
     <aside className="w-60 bg-black flex flex-col p-6 space-y-8">
       {/* Logo */}
