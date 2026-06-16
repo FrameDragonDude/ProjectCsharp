@@ -20,6 +20,7 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
+    c.CustomSchemaIds(type => type.FullName);
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "Nhap token theo cu phap: Bearer {token}",
@@ -104,13 +105,13 @@ builder.Services.AddHttpClient<IClaudeRecommendationService, ClaudeRecommendatio
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// if (app.Environment.IsDevelopment())
+// {
+//     app.UseSwagger();
+//     app.UseSwaggerUI();
+// }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 
 // Setup Static Files for "storage" folder
 var storagePath = Path.Combine(Directory.GetCurrentDirectory(), "storage");
@@ -125,7 +126,11 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/storage"
 });
 
-// Also enable default wwwroot static files
+// Also enable default wwwroot static files.
+app.UseSwagger();
+app.UseSwaggerUI();
+app.UseHttpsRedirection();
+
 app.UseStaticFiles();
 
 app.UseCors("Frontend");
