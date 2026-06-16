@@ -29,11 +29,11 @@ export async function searchCatalog(query: string): Promise<SearchResult[]> {
   return response.data;
 }
 
-export async function createPlaylist(name: string, description: string, createdByUserId = '22222222-2222-2222-2222-222222222222'): Promise<Playlist> {
+export async function createPlaylist(name: string, description: string, createdByUserId?: string): Promise<Playlist> {
   const response = await axiosClient.post<Playlist>('/playlists', {
     name,
     description,
-    createdByUserId,
+    createdByUserId: createdByUserId ?? null,
   });
 
   return response.data;

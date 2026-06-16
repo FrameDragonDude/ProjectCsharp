@@ -223,12 +223,11 @@ ORDER BY a.ReleaseDate DESC;";
     public async Task<PlaylistDto> CreatePlaylistAsync(CreatePlaylistRequest request, CancellationToken cancellationToken = default)
     {
         var playlistId = Guid.NewGuid().ToString();
-        var createdByUserId = string.IsNullOrWhiteSpace(request.CreatedByUserId)
-            ? "22222222-2222-2222-2222-222222222222"
-            : request.CreatedByUserId;
 
         await using var connection = new MySqlConnection(ConnectionString);
         await connection.OpenAsync(cancellationToken);
+
+        var createdByUserId = await ResolvePlaylistOwnerIdAsync(connection, request.CreatedByUserId, cancellationToken);
 
         const string sql = @"
 INSERT INTO Playlists (Id, Name, Description, IsPublic, CreatedByUserId)
@@ -244,6 +243,33 @@ VALUES (@Id, @Name, @Description, 1, @CreatedByUserId);";
         }
 
         return new PlaylistDto(playlistId, request.Name, request.Description, true, createdByUserId, 0, null);
+    }
+
+    private static async Task<string> ResolvePlaylistOwnerIdAsync(MySqlConnection connection, string? requestedUserId, CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(requestedUserId))
+        {
+            const string requestedUserSql = "SELECT Id FROM Users WHERE Id = @UserId LIMIT 1;";
+            await using var requestedUserCommand = new MySqlCommand(requestedUserSql, connection);
+            requestedUserCommand.Parameters.AddWithValue("@UserId", requestedUserId);
+
+            var requestedUser = await requestedUserCommand.ExecuteScalarAsync(cancellationToken);
+            if (requestedUser is not null)
+            {
+                return ConvertDbValueToString(requestedUser, "Id");
+            }
+        }
+
+        const string fallbackUserSql = "SELECT Id FROM Users ORDER BY CreatedAt LIMIT 1;";
+        await using var fallbackUserCommand = new MySqlCommand(fallbackUserSql, connection);
+
+        var fallbackUser = await fallbackUserCommand.ExecuteScalarAsync(cancellationToken);
+        if (fallbackUser is not null)
+        {
+            return ConvertDbValueToString(fallbackUser, "Id");
+        }
+
+        throw new InvalidOperationException("Cannot create playlist because the Users table is empty.");
     }
 
     public async Task AddMediaToPlaylistAsync(string playlistId, string mediaItemId, CancellationToken cancellationToken = default)

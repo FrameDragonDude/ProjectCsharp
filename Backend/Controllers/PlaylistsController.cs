@@ -29,8 +29,8 @@ public class PlaylistsController : ControllerBase
         return Ok(playlists);
     }
 
-    // POST: api/playlists
-    [HttpPost]
+    // POST: api/playlists/user
+    [HttpPost("user")]
     public async Task<IActionResult> CreatePlaylist(PlaylistCreateDto dto)
     {
         var playlist = new Playlist

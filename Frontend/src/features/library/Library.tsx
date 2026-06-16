@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Heart, Plus, Upload, ListMusic, Video, Music, Play } from 'lucide-react';
 import { addMediaToPlaylist, createPlaylist, getLibrarySummary, createAlbum, getPlaylistTracks } from '../../services/api/tuneVaultApi';
 import { usePlayerStore } from '../../store/usePlayerStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import type { MediaItem, Playlist } from '../../types';
 import { resolveAssetUrl } from '../../utils/resolveAsset';
 
@@ -16,12 +17,14 @@ export default function Library() {
   const [playlistName, setPlaylistName] = useState('');
   const [playlistDescription, setPlaylistDescription] = useState('');
   const [createAlbumOpen, setCreateAlbumOpen] = useState(false);
+  const [createPlaylistError, setCreatePlaylistError] = useState('');
   const [albumTitle, setAlbumTitle] = useState('');
   const [albumArtist, setAlbumArtist] = useState('');
   const [albumRelease, setAlbumRelease] = useState('');
   const [targetTrack, setTargetTrack] = useState<MediaItem | null>(null);
   const [targetPlaylistId, setTargetPlaylistId] = useState('');
   const playTrack = usePlayerStore((state) => state.playTrack);
+  const user = useAuthStore((state) => state.user);
 
   const loadLibrary = async () => {
     try {
@@ -69,14 +72,20 @@ export default function Library() {
 
   const handleCreatePlaylist = async () => {
     if (!playlistName.trim()) {
+      setCreatePlaylistError('Vui long nhap ten playlist.');
       return;
     }
 
-    await createPlaylist(playlistName.trim(), playlistDescription.trim());
-    setPlaylistName('');
-    setPlaylistDescription('');
-    setCreateOpen(false);
-    await loadLibrary();
+    try {
+      setCreatePlaylistError('');
+      await createPlaylist(playlistName.trim(), playlistDescription.trim(), user?.id);
+      setPlaylistName('');
+      setPlaylistDescription('');
+      setCreateOpen(false);
+      await loadLibrary();
+    } catch (requestError) {
+      setCreatePlaylistError(requestError instanceof Error ? requestError.message : 'Khong tao duoc playlist.');
+    }
   };
 
   const handleAddToPlaylist = async () => {
@@ -283,9 +292,17 @@ export default function Library() {
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-neutral-950 p-6">
             <h3 className="text-xl font-bold mb-4">Tạo Playlist</h3>
             <div className="space-y-4">
+              {createPlaylistError && (
+                <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                  {createPlaylistError}
+                </div>
+              )}
               <input
                 value={playlistName}
-                onChange={(event) => setPlaylistName(event.target.value)}
+                onChange={(event) => {
+                  setPlaylistName(event.target.value);
+                  setCreatePlaylistError('');
+                }}
                 placeholder="Tên playlist"
                 className="w-full rounded-lg bg-neutral-800 border border-neutral-700 px-4 py-3 text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-white/30"
               />
