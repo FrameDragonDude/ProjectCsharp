@@ -43,13 +43,15 @@ builder.Services.AddSwaggerGen(c =>
 // Configure CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("Frontend", policy =>
-    {
-        policy.WithOrigins("http://localhost:5173")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
-    });
+	options.AddPolicy("Frontend", policy =>
+	{
+		policy.WithOrigins("http://localhost:5173")
+			  .AllowAnyHeader()
+			  .AllowAnyMethod()
+			  .AllowCredentials();
+			  //da xin phep sua cho nay de em dung credentials ket noi real time a
+			  //.AllowAnyOrigin(); 
+	});
 });
 
 var secretKey = builder.Configuration["JwtSettings:Secret"]
@@ -80,6 +82,15 @@ builder.Services.AddDbContext<TuneVaultDbContext>(options =>
     {
         options.UseMySql(cs, ServerVersion.AutoDetect(cs));
     }
+	// options.AddPolicy("Frontend", policy =>
+	// {
+	// 	policy.WithOrigins("http://localhost:5173")
+	// 		  .AllowAnyHeader()
+	// 		  .AllowAnyMethod()
+	// 		  .AllowCredentials();
+	// 		  //da xin phep sua cho nay de em dung credentials ket noi real time a
+	// 		  //.AllowAnyOrigin(); 
+	// });
 });
 
 builder.Services.AddScoped<Backend.Data.IMusicCatalogRepository, Backend.Data.MySqlMusicCatalogRepository>();
