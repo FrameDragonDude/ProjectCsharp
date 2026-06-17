@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Heart, Plus, Upload, ListMusic, Video, Music, Play } from 'lucide-react';
 import { addMediaToPlaylist, createPlaylist, getLibrarySummary, createAlbum, getPlaylistTracks } from '../../services/api/tuneVaultApi';
 import { usePlayerStore } from '../../store/usePlayerStore';
@@ -25,6 +26,7 @@ export default function Library() {
   const [targetPlaylistId, setTargetPlaylistId] = useState('');
   const playTrack = usePlayerStore((state) => state.playTrack);
   const user = useAuthStore((state) => state.user);
+  const navigate = useNavigate();
 
   const loadLibrary = async () => {
     try {
@@ -163,6 +165,7 @@ export default function Library() {
                 {playlists.map((playlist) => (
                 <div
                   key={playlist.id}
+                  onClick={() => navigate(`/playlist/${playlist.id}`)}
                   className="p-4 bg-neutral-800/40 hover:bg-neutral-800 rounded-md cursor-pointer transition group"
                 >
                   <div className={`w-full aspect-square mb-4 rounded overflow-hidden shadow-lg flex items-center justify-center ${

@@ -48,6 +48,12 @@ export async function addMediaToPlaylist(playlistId: string, mediaItemId: string
   return response.data.playlists;
 }
 
+export async function removeMediaFromPlaylist(playlistId: string, mediaItemId: string): Promise<void> {
+  await axiosClient.delete(`/Playlists/remove-track`, {
+    params: { playlistId, mediaItemId },
+  });
+}
+
 export async function getVideoItems(): Promise<MediaItem[]> {
   const response = await axiosClient.get<MediaItem[]>('/media/video');
   return response.data;
