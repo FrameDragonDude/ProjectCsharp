@@ -22,7 +22,7 @@ export default function Home() {
   const openVideo = usePlayerStore((state) => state.openVideo);
   const [recentSongs, setRecentSongs] = useState<PlayHistory[]>([]);
 
-  const currentUser = "22222222-2222-2222-2222-222200000002"; // Mock user Id from TuneVault.sql
+  const currentUser = "22222222-2222-2222-2222-222200000002";
 
   useEffect(() => {
     void (async () => {
@@ -61,7 +61,7 @@ export default function Home() {
       <section>
         <h2 className="text-xl font-bold mb-4">Nghe gần đây</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {recentSongs.map((song) => {
+          {recentSongs.slice(0, 20).map((song) => {
             const matchingSong = songs.find((s) => s.id === song.mediaItemId);
             const coverUrl = matchingSong?.coverImageUrl
               ? resolveAssetUrl(matchingSong.coverImageUrl)
@@ -77,7 +77,7 @@ export default function Home() {
                     console.log("Bài hát này hiện không có sẵn trong danh sách tải về");
                   }
                 }}
-                className="bg-zinc-800/40 p-4 rounded-lg hover:bg-zinc-800 transition cursor-pointer"
+                className="bg-zinc-800/40 p-4 rounded-lg hover:bg-zinc-800 transition cursor-pointer min-w-[160px] w-40 flex-shrink-0 snap-start"
               >
                 <img
                   src={coverUrl}
