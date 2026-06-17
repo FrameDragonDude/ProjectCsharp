@@ -19,11 +19,6 @@ public sealed class SocialController(
         [FromBody] RecordPlayHistoryCommand command,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(command.UserId))
-        {
-            return BadRequest("UserId is required.");
-        }
-
         if (string.IsNullOrWhiteSpace(command.MediaItemId))
         {
             return BadRequest("MediaItemId is required.");

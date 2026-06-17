@@ -22,7 +22,7 @@ export default function Home() {
   const openVideo = usePlayerStore((state) => state.openVideo);
   const [recentSongs, setRecentSongs] = useState<PlayHistory[]>([]);
 
-  const currentUser = "22222222-2222-2222-2222-222222222222"; // Mock user Id
+  const currentUser = "22222222-2222-2222-2222-222200000002"; // Mock user Id from TuneVault.sql
 
   useEffect(() => {
     void (async () => {

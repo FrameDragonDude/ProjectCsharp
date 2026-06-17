@@ -1,5 +1,5 @@
 import axiosClient from './axiosClient';
-import type { LibrarySummary, MediaItem, Playlist, SearchResult } from '../../types';
+import type { LibrarySummary, MediaItem, Playlist, PlayHistory, SearchResult } from '../../types';
 
 export async function getLibrarySummary(): Promise<LibrarySummary> {
   const response = await axiosClient.get<LibrarySummary>('/library/summary');
@@ -50,6 +50,18 @@ export async function addMediaToPlaylist(playlistId: string, mediaItemId: string
 
 export async function getVideoItems(): Promise<MediaItem[]> {
   const response = await axiosClient.get<MediaItem[]>('/media/video');
+  return response.data;
+}
+
+export async function recordPlayHistory(mediaItemId: string, userId?: string): Promise<void> {
+  await axiosClient.post('/play-histories', {
+    userId: userId ?? '',
+    mediaItemId,
+  });
+}
+
+export async function getRecentPlayHistories(userId = ''): Promise<PlayHistory[]> {
+  const response = await axiosClient.get<PlayHistory[]>(`/play-histories/${userId}/recent`);
   return response.data;
 }
 

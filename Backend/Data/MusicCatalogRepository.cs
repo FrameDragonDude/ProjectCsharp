@@ -227,7 +227,7 @@ ORDER BY a.ReleaseDate DESC;";
         await using var connection = new MySqlConnection(ConnectionString);
         await connection.OpenAsync(cancellationToken);
 
-        var createdByUserId = await ResolvePlaylistOwnerIdAsync(connection, request.CreatedByUserId, cancellationToken);
+        var createdByUserId = await ResolveUserIdAsync(connection, request.CreatedByUserId, cancellationToken);
 
         const string sql = @"
 INSERT INTO Playlists (Id, Name, Description, IsPublic, CreatedByUserId)
@@ -245,7 +245,7 @@ VALUES (@Id, @Name, @Description, 1, @CreatedByUserId);";
         return new PlaylistDto(playlistId, request.Name, request.Description, true, createdByUserId, 0, null);
     }
 
-    private static async Task<string> ResolvePlaylistOwnerIdAsync(MySqlConnection connection, string? requestedUserId, CancellationToken cancellationToken)
+    private static async Task<string> ResolveUserIdAsync(MySqlConnection connection, string? requestedUserId, CancellationToken cancellationToken)
     {
         if (!string.IsNullOrWhiteSpace(requestedUserId))
         {
@@ -269,7 +269,7 @@ VALUES (@Id, @Name, @Description, 1, @CreatedByUserId);";
             return ConvertDbValueToString(fallbackUser, "Id");
         }
 
-        throw new InvalidOperationException("Cannot create playlist because the Users table is empty.");
+        throw new InvalidOperationException("Cannot continue because the Users table is empty.");
     }
 
     public async Task AddMediaToPlaylistAsync(string playlistId, string mediaItemId, CancellationToken cancellationToken = default)
@@ -588,13 +588,15 @@ ORDER BY p.CreatedAt DESC;";
         await using var connection = new MySqlConnection(ConnectionString);
         await connection.OpenAsync(cancellationToken);
 
+        var userId = await ResolveUserIdAsync(connection, command.UserId, cancellationToken);
+
         const string sql = @"
 INSERT INTO PlayHistories (Id, UserId, MediaItemId)
 VALUES (@Id, @UserId, @MediaItemId);";
 
         await using var dbCommand = new MySqlCommand(sql, connection);
         dbCommand.Parameters.AddWithValue("@Id", Guid.NewGuid().ToString());
-        dbCommand.Parameters.AddWithValue("@UserId", command.UserId);
+        dbCommand.Parameters.AddWithValue("@UserId", userId);
         dbCommand.Parameters.AddWithValue("@MediaItemId", command.MediaItemId);
 
         await dbCommand.ExecuteNonQueryAsync(cancellationToken);

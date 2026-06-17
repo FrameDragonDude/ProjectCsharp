@@ -53,6 +53,13 @@ export interface LibrarySummary {
 	playlists: Playlist[];
 }
 
+export interface PlayHistory {
+	id: string;
+	mediaItemId: string;
+	mediaTitle?: string | null;
+	playedAt: string;
+}
+
 export interface SearchResult {
 	id: string;
 	title: string;

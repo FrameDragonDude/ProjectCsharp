@@ -134,21 +134,23 @@ CREATE TABLE Follows (
 -- Dữ liệu mẫu
 
 -- Tạo các ID cố định dạng UUID string để thiết lập mối quan hệ
-SET @UserAdmin = '11111111-1111-1111-1111-111111111111';
-SET @UserCandidate = '22222222-2222-2222-2222-222222222222';
-SET @ArtistId = '33333333-3333-3333-3333-333333333333';
-SET @AlbumId = '44444444-4444-4444-4444-444444444444';
-SET @Playlist1 = '55555555-5555-5555-5555-555555555555';
-SET @Playlist2 = '66666666-6666-6666-6666-666666666666';
+SET @UserAdmin    = '11111111-1111-1111-1111-111100000001'; -- Bảng 1 (Users): Số 01 là Admin
+SET @UserCandidate= '22222222-2222-2222-2222-222200000002'; -- Bảng 1 (Users): Số 02 là Sinh viên
+SET @ArtistId     = '33333333-3333-3333-3333-333300000003'; -- Bảng 3 (Artists): Số 03 là Sơn Tùng
+SET @AlbumId      = '44444444-4444-4444-4444-444400000004'; -- Bảng 4 (Albums): Số 04 là Album
+SET @Playlist1    = '66666666-6666-6666-6666-666600000001'; -- Bảng 6 (Playlists): Đuôi 01
+SET @Playlist2    = '66666666-6666-6666-6666-666600000002'; -- Bảng 6 (Playlists): Đuôi 02
 
-SET @Media1 = '77777777-7777-7777-7777-777777777711';
-SET @Media2 = '77777777-7777-7777-7777-777777777722';
-SET @Media3 = '77777777-7777-7777-7777-777777777733';
 
--- 1. Chèn tài khoản người dùng [cite: 253]
+SET @Media1       = '77777777-7777-7777-7777-777700000001'; 
+SET @Media2       = '77777777-7777-7777-7777-777700000002'; 
+SET @Media3       = '77777777-7777-7777-7777-777700000003';
+
+-- 1. Chèn tài khoản người dùng 
+
 INSERT INTO Users (Id, Username, PasswordHash, Email) VALUES
-(@UserAdmin, 'admin_sgu', 'AQAAAAEAACcQAAAAE...', 'admin@sgu.edu.vn'), -- Mật khẩu: Admin@123
-(@UserCandidate, 'candidate_sgu', 'AQAAAAEAACcQAAAAE...', 'candidate@sgu.edu.vn'); -- Mật khẩu: Student@123
+(@UserAdmin, 'admin_sgu', '$2a$11$N9qo8uLOicGC2ZFlKOn55uNbfS/M1YI7pGep7Fv4/Uv.fG78kKeeS', 'admin@sgu.edu.vn'),  -- Mật khẩu: Admin@123
+(@UserCandidate, 'candidate_sgu', '$2a$12$SgU2026TkV19b8P8R8XFeeeYvWGeApmvHeL7N6M2x7aZfRkm8l2CqY', 'candidate@sgu.edu.vn'); -- Mật khẩu: Student@123
 
 -- 2. Chèn hồ sơ chi tiết
 INSERT INTO UserProfiles (UserId, FullName, Bio) VALUES
@@ -167,13 +169,13 @@ INSERT INTO MediaItems (Id, Title, FilePath, Duration, MediaType, OwnerId, Album
 (@Media1, 'Chúng Ta Của Hiện Tại', '/storage/audio/chung_ta_cua_hien_tai.mp3', '5:02', 'Audio', @UserAdmin, @AlbumId, '/storage/pics/chung_ta_cua_hien_tai.jpg'),
 (@Media2, 'Muộn Rồi Mà Sao Còn', '/storage/audio/muon_roi_ma_sao_con.mp3', '4:48', 'Audio', @UserAdmin, NULL, '/storage/pics/muon_roi_ma_sao_con.jpg'),
 (@Media3, 'Video Live Concert SGU', '/storage/video/sgu_concert.mp4', '10:00', 'Video', @UserAdmin, NULL, NULL),
-('77777777-7777-7777-7777-777777777744', 'Nơi Này Có Anh', '/storage/audio/noi_nay_co_anh.mp3', '4:38', 'Audio', @UserCandidate, NULL, '/storage/pics/noi_nay_co_anh.jpg'),
-('77777777-7777-7777-7777-777777777755', 'Lạc Trôi', '/storage/audio/lac_troi.mp3', '4:32', 'Audio', @UserCandidate, NULL, '/storage/pics/lac_troi.jpg'),
-('77777777-7777-7777-7777-777777777766', 'Hãy Trao Cho Anh', '/storage/audio/hay_trao_cho_anh.mp3', '4:22', 'Audio', @UserAdmin, NULL, '/storage/pics/hay_trao_cho_anh.jpg'),
-('77777777-7777-7777-7777-777777777777', 'Chạy Ngay Đi', '/storage/audio/chay_ngay_di.mp3', '4:33', 'Audio', @UserAdmin, NULL, '/storage/pics/chay_ngay_di.jpg'),
-('77777777-7777-7777-7777-777777777788', 'Chúng Ta Của Tương Lai', '/storage/video/chung_ta_cua_tuong_lai.mp4', '4:36', 'Video', @UserAdmin, @AlbumId, NULL),
-('77777777-7777-7777-7777-777777777799', 'Âm Thầm Bên Em', '/storage/audio/am_tham_ben_em.mp3', '4:53', 'Audio', @UserCandidate, NULL, '/storage/pics/am_tham_ben_em.jpg'),
-('77777777-7777-7777-7777-777777777700', 'Cơn Mưa Ngang Qua', '/storage/audio/con_mua_ngang_qua.mp3', '3:51', 'Audio', @UserCandidate, NULL, '/storage/pics/con_mua_ngang_qua.jpg');
+('77777777-7777-7777-7777-777700000004', 'Nơi Này Có Anh', '/storage/audio/noi_nay_co_anh.mp3', '4:38', 'Audio', @UserCandidate, NULL, '/storage/pics/noi_nay_co_anh.jpg'),
+('77777777-7777-7777-7777-777700000005', 'Lạc Trôi', '/storage/audio/lac_troi.mp3', '4:32', 'Audio', @UserCandidate, NULL, '/storage/pics/lac_troi.jpg'),
+('77777777-7777-7777-7777-777700000006', 'Hãy Trao Cho Anh', '/storage/audio/hay_trao_cho_anh.mp3', '4:22', 'Audio', @UserAdmin, NULL, '/storage/pics/hay_trao_cho_anh.jpg'),
+('77777777-7777-7777-7777-777700000007', 'Chạy Ngay Đi', '/storage/audio/chay_ngay_di.mp3', '4:33', 'Audio', @UserAdmin, NULL, '/storage/pics/chay_ngay_di.jpg'),
+('77777777-7777-7777-7777-777700000008', 'Chúng Ta Của Tương Lai', '/storage/video/chung_ta_cua_tuong_lai.mp4', '4:36', 'Video', @UserAdmin, @AlbumId, NULL),
+('77777777-7777-7777-7777-777700000009', 'Âm Thầm Bên Em', '/storage/audio/am_tham_ben_em.mp3', '4:53', 'Audio', @UserCandidate, NULL, '/storage/pics/am_tham_ben_em.jpg'),
+('77777777-7777-7777-7777-777700000010', 'Cơn Mưa Ngang Qua', '/storage/audio/con_mua_ngang_qua.mp3', '3:51', 'Audio', @UserCandidate, NULL, '/storage/pics/con_mua_ngang_qua.jpg');
     
 -- 5. Chèn 2 Playlist mẫu 
 INSERT INTO Playlists (Id, Name, Description, CreatedByUserId) VALUES
@@ -191,8 +193,8 @@ INSERT INTO PlayHistories (Id, UserId, MediaItemId, PlayedAt) VALUES
 (UUID(), @UserCandidate, @Media1, DATE_SUB(NOW(), INTERVAL 1 HOUR)), 
 (UUID(), @UserCandidate, @Media2, DATE_SUB(NOW(), INTERVAL 45 MINUTE)), 
 (UUID(), @UserCandidate, @Media3, DATE_SUB(NOW(), INTERVAL 30 MINUTE)), 
-(UUID(), @UserCandidate, '77777777-7777-7777-7777-777777777744', DATE_SUB(NOW(), INTERVAL 15 MINUTE)), 
-(UUID(), @UserCandidate, '77777777-7777-7777-7777-777777777755', DATE_SUB(NOW(), INTERVAL 5 MINUTE));
+(UUID(), @UserCandidate, '77777777-7777-7777-7777-777700000004', DATE_SUB(NOW(), INTERVAL 15 MINUTE)), 
+(UUID(), @UserCandidate, '77777777-7777-7777-7777-777700000005', DATE_SUB(NOW(), INTERVAL 5 MINUTE));
 
 -- 8. Chèn dữ liệu mẫu cho bảng Theo dõi (Follows) - Để kiểm thử tính năng mạng xã hội âm nhạc
 -- Sinh viên SGU nhấn Theo dõi Nghệ sĩ Sơn Tùng M-TP
@@ -206,7 +208,7 @@ INSERT INTO Follows (FollowerId, TargetId, TargetType) VALUES
 -- 9. Chèn dữ liệu mẫu cho bảng Yêu thích (Favorites) - Đánh dấu bài hát yêu thích
 INSERT INTO Favorites (UserId, MediaItemId) VALUES
 (@UserCandidate, @Media1),
-(@UserCandidate, '77777777-7777-7777-7777-777777777755'),
+(@UserCandidate, '77777777-7777-7777-7777-777700000005'),
 (@UserAdmin, @Media2);
 
 -- 10. Chèn dữ liệu mẫu cho bảng Thông báo (Notifications) - Để Frontend hiển thị badge số chưa đọc ngay khi vào app
