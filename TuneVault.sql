@@ -26,6 +26,7 @@ CREATE TABLE Artists (
     Name VARCHAR(256) NOT NULL,
     Bio TEXT NULL,
     AvatarUrl VARCHAR(512) NULL
+    
 );
 
 -- 4. Bảng Album [cite: 211]
@@ -158,8 +159,8 @@ INSERT INTO UserProfiles (UserId, FullName, Bio) VALUES
 (@UserCandidate, 'Sinh viên SGU', 'Tài khoản kiểm thử chức năng sinh viên.');
 
 -- 3. Chèn Nghệ sĩ & Album mẫu
-INSERT INTO Artists (Id, Name, Bio) VALUES 
-(@ArtistId, 'Sơn Tùng M-TP', 'Nghệ sĩ nhạc Pop Việt Nam');
+INSERT INTO Artists (Id, Name, Bio, AvatarUrl) VALUES 
+(@ArtistId, 'Sơn Tùng M-TP', 'Nghệ sĩ nhạc Pop Việt Nam', '/storage/avatars/sontung_avatar.jpg');
 
 INSERT INTO Albums (Id, Title, ArtistId, ReleaseDate) VALUES 
 (@AlbumId, 'Chúng Ta Của Tương Lai', @ArtistId, '2024-03-08');

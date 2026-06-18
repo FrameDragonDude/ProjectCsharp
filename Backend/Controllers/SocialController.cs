@@ -111,7 +111,7 @@ public sealed class SocialController(
     public async Task<ActionResult<IReadOnlyList<PlayHistoryDto>>> GetRecentPlayHistories(
         string userId, CancellationToken cancellationToken)
     {
-        return Ok(await repository.GetRecentPlayHistoriesAsync(userId, 10, cancellationToken));
+        return Ok(await repository.GetRecentPlayHistoriesAsync(userId, 20, cancellationToken));
     }
 
 }

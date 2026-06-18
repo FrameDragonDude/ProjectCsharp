@@ -1,5 +1,5 @@
 import axiosClient from './axiosClient';
-import type { LibrarySummary, MediaItem, Playlist, PlayHistory, SearchResult } from '../../types';
+import type { ArtistDetail, ArtistSummary, LibrarySummary, MediaItem, Playlist, PlayHistory, SearchResult } from '../../types';
 
 export async function getLibrarySummary(): Promise<LibrarySummary> {
   const response = await axiosClient.get<LibrarySummary>('/library/summary');
@@ -18,6 +18,16 @@ export async function getPlaylistTracks(playlistId: string): Promise<MediaItem[]
 
 export async function getPlaylistById(playlistId: string): Promise<Playlist | undefined> {
   const response = await axiosClient.get<Playlist>(`/playlists/${playlistId}`);
+  return response.data;
+}
+
+export async function getArtists(): Promise<ArtistSummary[]> {
+  const response = await axiosClient.get<ArtistSummary[]>('/artists');
+  return response.data;
+}
+
+export async function getArtistById(id: string): Promise<ArtistDetail> {
+  const response = await axiosClient.get<ArtistDetail>(`/artists/${id}`);
   return response.data;
 }
 
