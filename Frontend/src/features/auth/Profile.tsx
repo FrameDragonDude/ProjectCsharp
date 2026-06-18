@@ -1,23 +1,45 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Settings, Edit2, MapPin, Link as LinkIcon, User } from 'lucide-react';
-import EditProfileModal from './EditProfileModal'; // 1. Import Component vừa tạo
+import EditProfileModal from './EditProfileModal';
+import { getProfile } from '../../services/api/tuneVaultApi';
+import { resolveAssetUrl } from '../../utils/resolveAsset';
 
 export default function Profile() {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Dữ liệu mẫu cho người dùng (Mock data)
-  const [userProfile] = useState({
-    fullName: 'Vũ Lê Đức Anh',
-    bio: 'Sinh viên CNTT - Đại học Sài Gòn (SGU) ',
+  const [userProfile, setUserProfile] = useState({
+    fullName: '',
+    bio: '',
     location: 'TP. Hồ Chí Minh, Việt Nam',
-    website: 'github.com/rickk_astley_fake',
-    followers: 128,
-    following: 45,
-    publicPlaylists: 4,
+    website: '',
+    followers: 0,
+    following: 0,
+    publicPlaylists: 0,
     avatarColor: 'bg-indigo-600',
-    avatarUrl: '', // Thêm thuộc tính avatarUrl (có thể là URL hoặc rỗng)
+    avatarUrl: '',
   });
+
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        setLoading(true);
+        const data = await getProfile();
+        setUserProfile(prev => ({
+          ...prev,
+          fullName: data.fullName || '',
+          bio: data.bio || '',
+          avatarUrl: data.avatarUrl || '',
+        }));
+      } catch (error) {
+        console.error("Lỗi tải thông tin user", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchProfile();
+  }, []);
 
   // Dữ liệu mẫu cho Playlist công khai của user
   const mockPublicPlaylists = [
@@ -32,8 +54,12 @@ export default function Profile() {
       <div className="bg-gradient-to-b from-neutral-600 to-neutral-900 p-6 md:p-10 flex flex-col md:flex-row items-end space-y-6 md:space-y-0 md:space-x-8 shrink-0">
         
         {/* Avatar */}
-        <div className={`w-40 h-40 md:w-52 md:h-52 rounded-full shadow-2xl flex-shrink-0 flex items-center justify-center ${userProfile.avatarColor}`}>
-          <User size={80} className="text-white/50" />
+        <div className={`w-40 h-40 md:w-52 md:h-52 rounded-full shadow-2xl flex-shrink-0 flex items-center justify-center ${userProfile.avatarColor} overflow-hidden`}>
+          {userProfile.avatarUrl ? (
+            <img src={resolveAssetUrl(userProfile.avatarUrl)} alt="Avatar" className="w-full h-full object-cover" />
+          ) : (
+            <User size={80} className="text-white/50" />
+          )}
         </div>
         
         {/* Thông tin chính */}

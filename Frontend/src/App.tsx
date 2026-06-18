@@ -12,7 +12,7 @@ import ShareInbox from './features/share/ShareInbox';
 import VideoPlayer from './features/player/VideoPlayer';
 import AlbumDetail from './features/album/AlbumDetail';
 import ArtistDetail from './features/artist/ArtistDetail';
-
+import ProtectedRoute from './routes/ProtectedRoute';
 
 function App() {
   return (
@@ -23,16 +23,21 @@ function App() {
         </Route>
         
         <Route element={<MainLayout />}>
+          {/* Public Routes */}
           <Route path="/" element={<Home />} />
           <Route path="/search" element={<Search />} />
-          <Route path="/library" element={<Library />} />
           <Route path="/playlist/:id" element={<PlaylistDetail />} />
           <Route path="/album/:id" element={<AlbumDetail />} />
           <Route path="/artist/:id" element={<ArtistDetail />} />
           <Route path="/video/:id" element={<VideoPlayer />} />
-          <Route path="/notifications" element={<Notifications />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/share" element={<ShareInbox />} />
+          
+          {/* Protected Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/library" element={<Library />} />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/share" element={<ShareInbox />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>

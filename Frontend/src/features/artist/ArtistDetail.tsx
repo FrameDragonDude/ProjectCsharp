@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Album, Music2, Play } from 'lucide-react';
-import { getArtistById } from '../../services/api/tuneVaultApi';
+import { getArtistById, toggleFollow } from '../../services/api/tuneVaultApi';
 import type { ArtistDetail, Album as AlbumType, MediaItem } from '../../types';
 import { resolveAssetUrl } from '../../utils/resolveAsset';
 import { usePlayerStore } from '../../store/usePlayerStore';
@@ -13,6 +13,7 @@ export default function ArtistDetailPage() {
   const [data, setData] = useState<ArtistDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isFollowing, setIsFollowing] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -39,6 +40,15 @@ export default function ArtistDetailPage() {
       mounted = false;
     };
   }, [id]);
+
+  const handleFollowToggle = async () => {
+    try {
+      await toggleFollow(id!, 'Artist');
+      setIsFollowing(prev => !prev);
+    } catch (err) {
+      console.error('Lỗi khi thao tác theo dõi', err);
+    }
+  };
 
   const albums = useMemo(() => data?.albums ?? [], [data]);
   const songs = useMemo(() => data?.songs ?? [], [data]);
@@ -105,6 +115,18 @@ export default function ArtistDetailPage() {
             <p className="max-w-3xl text-neutral-300">
               {artist.bio ?? 'Chưa có mô tả cho nghệ sĩ này.'}
             </p>
+            <div className="pt-2">
+              <button 
+                onClick={handleFollowToggle}
+                className={`px-6 py-2 rounded-full font-bold text-sm transition-colors border ${
+                  isFollowing 
+                    ? 'bg-transparent border-white text-white hover:border-neutral-400 hover:text-neutral-400' 
+                    : 'bg-white border-transparent text-black hover:bg-neutral-200'
+                }`}
+              >
+                {isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
+              </button>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-3 text-sm text-neutral-300">

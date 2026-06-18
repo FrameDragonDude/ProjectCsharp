@@ -100,3 +100,43 @@ export async function assignMediaToAlbum(albumId: string, mediaItemId: string) {
   const response = await axiosClient.get('/library/summary');
   return response.data as any;
 }
+
+export async function login(emailOrUsername: string, password: string) {
+  const response = await axiosClient.post('/auth/login', {
+    emailOrUsername,
+    password,
+  });
+  return response.data as { token: string; message: string };
+}
+
+export async function register(username: string, email: string, password: string, fullName: string) {
+  const response = await axiosClient.post('/auth/register', {
+    username,
+    email,
+    password,
+    fullName,
+  });
+  return response.data as { userId: string; message: string };
+}
+
+export async function getProfile() {
+  const response = await axiosClient.get('/user/profile');
+  return response.data as { id: string; username: string; email: string; fullName: string; bio: string; avatarUrl: string; location?: string; website?: string };
+}
+
+export async function updateProfile(fullName: string, bio: string, avatarUrl: string) {
+  const response = await axiosClient.put('/user/profile', {
+    fullName,
+    bio,
+    avatarUrl,
+  });
+  return response.data;
+}
+
+export async function toggleFollow(targetId: string, type: 'User' | 'Artist' = 'Artist') {
+  const response = await axiosClient.post(`/follow/${targetId}`, null, {
+    params: { type },
+  });
+  return response.data;
+}
+
