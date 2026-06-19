@@ -4,7 +4,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { login, getProfile } from '../../services/api/tuneVaultApi';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -18,7 +18,7 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const loginResponse = await login(email, password);
+      const loginResponse = await login(username, password);
       
       // Store token so getProfile can use it in Authorization header
       localStorage.setItem('tunevault_token', loginResponse.token);
@@ -50,14 +50,14 @@ export default function Login() {
       )}
       
       <div className="space-y-1">
-        <label className="text-sm font-medium text-neutral-300">Email</label>
+        <label className="text-sm font-medium text-neutral-300">Tên đăng nhập</label>
         <input
-          type="email"
+          type="text"
           required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
           className="w-full px-4 py-2 bg-neutral-800 border border-neutral-700 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-white placeholder-neutral-500"
-          placeholder="name@sg.edu.vn"
+          placeholder="Tên đăng nhập"
         />
       </div>
 

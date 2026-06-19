@@ -24,7 +24,6 @@ function App() {
         
         <Route element={<MainLayout />}>
           {/* Public Routes */}
-          <Route path="/" element={<Home />} />
           <Route path="/search" element={<Search />} />
           <Route path="/playlist/:id" element={<PlaylistDetail />} />
           <Route path="/album/:id" element={<AlbumDetail />} />
@@ -33,6 +32,7 @@ function App() {
           
           {/* Protected Routes */}
           <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<Home />} />
             <Route path="/library" element={<Library />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/profile" element={<Profile />} />

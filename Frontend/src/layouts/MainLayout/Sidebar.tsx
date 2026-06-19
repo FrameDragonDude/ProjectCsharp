@@ -1,6 +1,7 @@
-import { Home, Search, Library, Bell, User, Send } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Home, Search, Library, Bell, User, Send, LogOut } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useNotificationStore } from '../../store/useNotificationStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useEffect } from 'react';
 
 
@@ -8,6 +9,13 @@ export default function Sidebar() {
   //mock Data
   const {unreadCount, connectSignalR, fetchNotifications} = useNotificationStore(); 
   const currentUser = "22222222-2222-2222-2222-222222222222"; 
+  const navigate = useNavigate();
+  const logout = useAuthStore(state => state.logout);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   useEffect (() => {
     fetchNotifications(currentUser);
@@ -54,13 +62,19 @@ export default function Sidebar() {
         </Link>
       </nav>
 
-      <div className="mt-auto pt-6 border-t border-neutral-800">
+      <div className="mt-auto pt-6 border-t border-neutral-800 space-y-4">
         <Link to="/profile" className="flex items-center space-x-3 text-neutral-400 hover:text-white transition-colors duration-200 group">
           <div className="w-8 h-8 bg-neutral-700 rounded-full flex items-center justify-center group-hover:bg-neutral-600 transition">
             <User size={16} />
           </div>
           <span className="font-semibold text-sm">Hồ sơ của tôi</span>
         </Link>
+        <button onClick={handleLogout} className="flex items-center space-x-3 text-neutral-400 hover:text-red-400 transition-colors duration-200 group w-full text-left">
+          <div className="w-8 h-8 bg-neutral-700 rounded-full flex items-center justify-center group-hover:bg-red-400/20 transition">
+            <LogOut size={16} />
+          </div>
+          <span className="font-semibold text-sm">Đăng xuất</span>
+        </button>
       </div>
     </aside>
   );
