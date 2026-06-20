@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import AuthLayout from './layouts/AuthLayout/AuthLayout';
 import MainLayout from './layouts/MainLayout/MainLayout';
 import Login from './features/auth/Login';
+import Register from './features/auth/Register';
 import Home from './features/explore/Home';
 import Search from './features/explore/Search';
 import Library from './features/library/Library';
@@ -20,6 +21,7 @@ function App() {
       <Routes>
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
         </Route>
         
         <Route element={<MainLayout />}>

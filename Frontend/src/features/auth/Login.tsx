@@ -42,51 +42,62 @@ export default function Login() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <div className="p-3 bg-red-500/10 border border-red-500/50 text-red-500 rounded text-sm text-center">
-          {error}
+    <div className="w-full animate-in fade-in zoom-in duration-500">
+      <h2 className="text-2xl font-bold text-center mb-6 text-white tracking-wide">Chào mừng trở lại</h2>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {error && (
+          <div className="p-3 bg-red-500/10 border border-red-500/50 text-red-400 rounded-lg text-sm text-center animate-in slide-in-from-top-2">
+            {error}
+          </div>
+        )}
+        
+        <div className="space-y-1.5 group">
+          <label className="text-sm font-medium text-neutral-400 group-focus-within:text-green-400 transition-colors">Email hoặc Tên đăng nhập</label>
+          <input
+            type="text"
+            required
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 text-white placeholder-neutral-600 transition-all"
+            placeholder="Nhập email hoặc tên đăng nhập"
+          />
         </div>
-      )}
-      
-      <div className="space-y-1">
-        <label className="text-sm font-medium text-neutral-300">Tên đăng nhập</label>
-        <input
-          type="text"
-          required
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          className="w-full px-4 py-2 bg-neutral-800 border border-neutral-700 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-white placeholder-neutral-500"
-          placeholder="Tên đăng nhập"
-        />
-      </div>
 
-      <div className="space-y-1">
-        <label className="text-sm font-medium text-neutral-300">Mật khẩu</label>
-        <input
-          type="password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full px-4 py-2 bg-neutral-800 border border-neutral-700 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-white placeholder-neutral-500"
-          placeholder="••••••••"
-        />
-      </div>
+        <div className="space-y-1.5 group">
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-medium text-neutral-400 group-focus-within:text-green-400 transition-colors">Mật khẩu</label>
+            <a href="#" className="text-xs text-neutral-500 hover:text-white transition-colors">Quên mật khẩu?</a>
+          </div>
+          <input
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 text-white placeholder-neutral-600 transition-all"
+            placeholder="••••••••"
+          />
+        </div>
 
-      <button
-        type="submit"
-        disabled={isLoading}
-        className="w-full py-3 px-4 bg-green-500 hover:bg-green-400 text-black font-bold rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-4"
-      >
-        {isLoading ? 'Đang xử lý...' : 'Đăng nhập'}
-      </button>
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="w-full py-3.5 px-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-black font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_25px_rgba(34,197,94,0.5)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 mt-6"
+        >
+          {isLoading ? (
+            <span className="flex items-center justify-center gap-2">
+              <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+              Đang xử lý...
+            </span>
+          ) : 'Đăng nhập'}
+        </button>
 
-      <p className="text-center text-sm text-neutral-400 mt-6">
-        Chưa có tài khoản?{' '}
-        <a href="#" className="text-white hover:underline font-medium">
-          Đăng ký ngay
-        </a>
-      </p>
-    </form>
+        <p className="text-center text-sm text-neutral-400 mt-8">
+          Chưa có tài khoản?{' '}
+          <a href="/register" className="text-green-400 hover:text-green-300 hover:underline font-semibold transition-colors">
+            Đăng ký ngay
+          </a>
+        </p>
+      </form>
+    </div>
   );
 }
