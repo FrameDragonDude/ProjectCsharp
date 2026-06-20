@@ -7,16 +7,16 @@ namespace Backend.Domain.Entities;
 public class MediaShare
 {
     [Key]
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public int Id { get; set; } 
 
     [Required]
-    public string SenderUserId { get; set; } = string.Empty;
+    public int SenderUserId { get; set; } 
 
     [Required]
-    public string ReceiverUserId { get; set; } = string.Empty;
+    public int ReceiverUserId { get; set; }
 
-    public string? MediaItemId { get; set; }
-    public string? PlaylistId { get; set; }
+    public int? MediaItemId { get; set; }
+    public int? PlaylistId { get; set; }
 
     public DateTime SharedAt { get; set; } = DateTime.UtcNow;
 

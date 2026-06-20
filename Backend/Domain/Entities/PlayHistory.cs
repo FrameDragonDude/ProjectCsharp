@@ -7,13 +7,13 @@ namespace Backend.Domain.Entities;
 public class PlayHistory
 {
     [Key]
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public int Id { get; set; }
 
     [Required]
-    public string UserId { get; set; } = string.Empty;
+    public int UserId { get; set; }
 
     [Required]
-    public string MediaItemId { get; set; } = string.Empty;
+    public int MediaItemId { get; set; }
 
     public DateTime PlayedAt { get; set; } = DateTime.UtcNow;
 

@@ -7,10 +7,10 @@ namespace Backend.Domain.Entities;
 public class Notification
 {
     [Key]
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public int Id { get; set; }
 
     [Required]
-    public string UserId { get; set; } = string.Empty;
+    public int UserId { get; set; }
 
     [Required]
     [MaxLength(50)]

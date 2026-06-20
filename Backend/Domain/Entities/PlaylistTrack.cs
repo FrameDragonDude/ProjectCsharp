@@ -5,8 +5,8 @@ namespace Backend.Domain.Entities;
 
 public class PlaylistTrack
 {
-    public string PlaylistId { get; set; } = string.Empty;
-    public string MediaItemId { get; set; } = string.Empty;
+    public int PlaylistId { get; set; }
+    public int MediaItemId { get; set; } 
     public DateTime AddedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation Properties

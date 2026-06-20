@@ -1,27 +1,28 @@
 namespace Backend.Models;
 
 public sealed record MediaItemDto(
-    string Id,
+    int Id,
     string Title,
     string FilePath,
     string Duration,
     string MediaType,
-    string OwnerId,
-    string? AlbumId,
+    int ArtistId,
+    // int OwnerId,
+    int? AlbumId,
     string? AlbumTitle,
     string? ArtistName,
     string? CoverImageUrl);
 
 public sealed record AlbumDto(
-    string Id,
+    int Id,
     string Title,
     string? CoverImageUrl,
-    string ArtistId,
+    int ArtistId,
     string? ArtistName,
     string ReleaseDate);
 
 public sealed record ArtistSummaryDto(
-    string Id,
+    int Id,
     string Name,
     string? Bio,
     string? AvatarUrl,
@@ -35,21 +36,21 @@ public sealed record ArtistDetailDto(
     IReadOnlyList<MediaItemDto> Songs);
 
 public sealed record PlaylistDto(
-    string Id,
+    int Id,
     string Name,
     string? Description,
     bool IsPublic,
-    string CreatedByUserId,
+    int CreatedByUserId,
     int TrackCount,
     string? CoverImageUrl);
 
 public sealed record SearchResultDto(
-    string Id,
+    int Id,
     string Title,
     string Subtitle,
     string Type,
     string? MediaType,
-    string? AlbumId,
+    int? AlbumId,
     string? FilePath,
     string? CoverImageUrl);
 
@@ -58,25 +59,25 @@ public sealed record LibrarySummaryDto(
     IReadOnlyList<AlbumDto> Albums,
     IReadOnlyList<PlaylistDto> Playlists);
 
-public sealed record CreatePlaylistRequest(string Name, string? Description, string? CreatedByUserId);
+public sealed record CreatePlaylistRequest(string Name, string? Description, int? CreatedByUserId);
 
 public sealed record AddTrackRequest(string MediaItemId);
 
 public sealed record CreateAlbumRequest(string Title, string ArtistName, string? CoverImageUrl, string? ReleaseDate);
 public sealed record UpdateAlbumCoverRequest(string? CoverImageUrl);
 
-public sealed record RecordPlayHistoryCommand(string UserId, string MediaItemId);
+public sealed record RecordPlayHistoryCommand(int UserId, int MediaItemId);
 
 public sealed record ShareMediaCommand(
-    string SenderUserId,
-    string ReceiverUserId,
-    string? MediaItemId,
-    string? PlaylistId,
+    int SenderUserId,
+    int ReceiverUserId,
+    int? MediaItemId,
+    int? PlaylistId,
     string ? SenderName);
 
 public sealed record NotificationDto(
-    string Id,
-    string UserId,
+    int Id,
+    int UserId,
     string Type,
     string PayloadJson,
     bool IsRead,
@@ -91,8 +92,8 @@ public sealed record SongRecommendationDto(
     string Reason);
 
 public sealed record PlayHistoryDto(
-    string Id,
-    string MediaItemId,
+    int Id,
+    int MediaItemId,
     string? MediaTitle,
     DateTime PlayedAt
 );

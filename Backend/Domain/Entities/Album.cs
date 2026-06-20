@@ -8,7 +8,7 @@ namespace Backend.Domain.Entities;
 public class Album
 {
     [Key]
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public int Id { get; set; }
 
     [Required]
     [MaxLength(256)]
@@ -18,7 +18,7 @@ public class Album
     public string? CoverImageUrl { get; set; }
 
     [Required]
-    public string ArtistId { get; set; } = string.Empty;
+    public int ArtistId { get; set; } 
 
     public DateTime ReleaseDate { get; set; }
 

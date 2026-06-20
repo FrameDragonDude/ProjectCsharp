@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations;
 namespace Backend.Models
 {
     public sealed record UpdateProfileCommand(
-        [Required] string UserId, 
+        [Required] int UserId, 
         
         [Required(ErrorMessage = "Tên hiển thị không được để trống.")]
         [MaxLength(35, ErrorMessage = "Tên hiển thị không được vượt quá 35 ký tự.")]

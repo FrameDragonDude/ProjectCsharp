@@ -5,8 +5,8 @@ namespace Backend.Domain.Entities;
 
 public class Follow
 {
-    public string FollowerId { get; set; } = string.Empty;
-    public string TargetId { get; set; } = string.Empty;
+    public int FollowerId { get; set; } 
+    public int TargetId { get; set; }
     public string TargetType { get; set; } = string.Empty; // User or Artist
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

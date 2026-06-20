@@ -8,7 +8,7 @@ namespace Backend.Domain.Entities;
 public class MediaItem
 {
     [Key]
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public int Id { get; set; } 
 
     [Required]
     [MaxLength(256)]
@@ -27,9 +27,9 @@ public class MediaItem
     public string MediaType { get; set; } = "Audio"; // Audio or Video
 
     [Required]
-    public string OwnerId { get; set; } = string.Empty;
+    public int OwnerId { get; set; } 
 
-    public string? AlbumId { get; set; }
+    public int? AlbumId { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

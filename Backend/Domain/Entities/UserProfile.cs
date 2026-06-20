@@ -8,7 +8,7 @@ public class UserProfile
 {
     [Key]
     [ForeignKey("User")]
-    public string UserId { get; set; } = string.Empty;
+    public int UserId { get; set; }
 
     [Required]
     [MaxLength(256)]

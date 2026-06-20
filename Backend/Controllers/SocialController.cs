@@ -82,7 +82,7 @@ public sealed class SocialController(
         }
     }
 
-    [HttpGet("notifications")]
+    [HttpGet("social/notifications")]
     public async Task<ActionResult<IReadOnlyList<NotificationDto>>> GetNotifications(
         [FromQuery] string userId, CancellationToken cancellationToken)
     {

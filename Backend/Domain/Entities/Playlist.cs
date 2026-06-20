@@ -8,7 +8,7 @@ namespace Backend.Domain.Entities;
 public class Playlist
 {
     [Key]
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public int Id { get; set; } 
 
     [Required]
     [MaxLength(256)]

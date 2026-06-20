@@ -2,19 +2,19 @@ namespace Backend.Models.DTOs;
 
 public class FavoriteDto
 {
-    public string UserId { get; set; } = string.Empty;
+    public int UserId { get; set; }
     public string MediaItemId { get; set; } = string.Empty;
 }
 
 public class PlayHistoryDto
 {
-    public string UserId { get; set; } = string.Empty;
-    public string MediaItemId { get; set; } = string.Empty;
+    public int UserId { get; set; } 
+    public int MediaItemId { get; set; } 
 }
 
 public class FollowDto
 {
-    public string FollowerId { get; set; } = string.Empty;
-    public string TargetId { get; set; } = string.Empty;
+    public int FollowerId { get; set; } 
+    public int TargetId { get; set; } 
     public string TargetType { get; set; } = "Artist"; // User or Artist
 }

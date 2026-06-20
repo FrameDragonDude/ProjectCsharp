@@ -123,12 +123,12 @@ ORDER BY al.ReleaseDate DESC, al.Title ASC;";
         }
 
         const string songsSql = @"
-SELECT mi.Id, mi.Title, mi.FilePath, mi.Duration, mi.MediaType, mi.OwnerId, mi.AlbumId,
-       al.Title AS AlbumTitle, ar.Name AS ArtistName, al.CoverImageUrl
+SELECT mi.Id, mi.Title, mi.FilePath, mi.Duration, mi.MediaType, ar.UserId AS OwnerId, mi.AlbumId,
+       al.Title AS AlbumTitle, ar.Name AS ArtistName, COALESCE(mi.CoverImageUrl, al.CoverImageUrl, ar.AvatarUrl) AS CoverImageUrl
 FROM MediaItems mi
-INNER JOIN Albums al ON al.Id = mi.AlbumId
-INNER JOIN Artists ar ON ar.Id = al.ArtistId
-WHERE al.ArtistId = @ArtistId
+INNER JOIN Artists ar ON ar.Id = mi.ArtistId
+LEFT JOIN Albums al ON al.Id = mi.AlbumId
+WHERE mi.ArtistId = @ArtistId
 ORDER BY mi.CreatedAt DESC, mi.Title ASC;";
 
         var songs = new List<MediaItemDto>();

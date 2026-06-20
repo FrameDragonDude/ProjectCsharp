@@ -6,14 +6,14 @@ using System.ComponentModel.DataAnnotations;
 namespace Backend.Models
 {
     public sealed record RegisterCommand(
-        [Required(ErrorMessage = "Tên đăng nhập không được để trống")] string Username, 
-        [Required(ErrorMessage = "Email không được để trống")]
-        [EmailAddress(ErrorMessage = "Email không đúng định dạng! Vui lòng nhập lại.")] string Email, 
-        [MinLength(6, ErrorMessage = "Mật khẩu phải có ít nhất 6 ký tự.")]
-        [RegularExpression(@"^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_]).+$", 
-            ErrorMessage = "Mật khẩu phải bao gồm ít nhất 1 chữ cái, 1 chữ số và 1 ký tự đặc biệt.")]
+        [Required(ErrorMessage = "T�n dang nh?p kh�ng du?c d? tr?ng")] string Username,
+        [Required(ErrorMessage = "Email kh�ng du?c d? tr?ng")]
+        [EmailAddress(ErrorMessage = "Email kh�ng d�ng d?nh d?ng! Vui l�ng nh?p l?i.")] string Email,
+        [MinLength(6, ErrorMessage = "M?t kh?u ph?i c� �t nh?t 6 k� t?.")]
+        [RegularExpression(@"^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_]).+$",
+            ErrorMessage = "M?t kh?u ph?i bao g?m �t nh?t 1 ch? c�i, 1 ch? s? v� 1 k� t? d?c bi?t.")]
         string Password,
-        [Required(ErrorMessage = "Họ và tên không được để trống")] string FullName
+        [Required(ErrorMessage = "H? v� t�n kh�ng du?c d? tr?ng")] string FullName
     ) : IRequest<string>;
 
     public class RegisterCommandHandler : IRequestHandler<RegisterCommand, string>
@@ -27,7 +27,7 @@ namespace Backend.Models
             _passwordHasher = passwordHasher;
         }
 
-        private string ConnectionString => _configuration.GetConnectionString("SpotifyDb") 
+        private string ConnectionString => _configuration.GetConnectionString("SpotifyDb")
             ?? throw new InvalidOperationException("Missing database connection string.");
 
         public async Task<string> Handle(RegisterCommand request, CancellationToken cancellationToken)
@@ -41,31 +41,33 @@ namespace Backend.Models
                 checkCmd.Parameters.AddWithValue("@Email", request.Email);
                 checkCmd.Parameters.AddWithValue("@Username", request.Username);
                 var exists = await checkCmd.ExecuteScalarAsync(cancellationToken);
-                if (exists != null) throw new Exception("Username hoặc Email đã được sử dụng.");
+                if (exists != null) throw new Exception("Username ho?c Email d� du?c s? d?ng.");
             }
 
-            var userId = Guid.NewGuid().ToString();
             var passwordHash = _passwordHasher.HashPassword(request.Password);
 
             await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
             try
             {
                 const string insertUserSql = @"
-                    INSERT INTO Users (Id, Username, Email, PasswordHash) 
-                    VALUES (@Id, @Username, @Email, @PasswordHash);";
-                
+INSERT INTO Users (Username, Email, PasswordHash, RoleId)
+VALUES (@Username, @Email, @PasswordHash, @RoleId);";
+
                 await using (var userCmd = new MySqlCommand(insertUserSql, connection, transaction))
                 {
-                    userCmd.Parameters.AddWithValue("@Id", userId);
                     userCmd.Parameters.AddWithValue("@Username", request.Username);
                     userCmd.Parameters.AddWithValue("@Email", request.Email);
                     userCmd.Parameters.AddWithValue("@PasswordHash", passwordHash);
+                    userCmd.Parameters.AddWithValue("@RoleId", 3);
                     await userCmd.ExecuteNonQueryAsync(cancellationToken);
                 }
 
+                var userIdCommand = new MySqlCommand("SELECT LAST_INSERT_ID();", connection, transaction);
+                var userId = Convert.ToInt64(await userIdCommand.ExecuteScalarAsync(cancellationToken));
+
                 const string insertProfileSql = @"
-                    INSERT INTO UserProfiles (UserId, FullName, Bio) 
-                    VALUES (@UserId, @FullName, 'Chào mừng đến với TuneVault!');";
+INSERT INTO UserProfiles (UserId, FullName, Bio)
+VALUES (@UserId, @FullName, 'Ch�o m?ng d?n v?i TuneVault!');";
 
                 await using (var profileCmd = new MySqlCommand(insertProfileSql, connection, transaction))
                 {
@@ -75,7 +77,7 @@ namespace Backend.Models
                 }
 
                 await transaction.CommitAsync(cancellationToken);
-                return userId;
+                return userId.ToString();
             }
             catch
             {
@@ -100,7 +102,7 @@ namespace Backend.Models
             _tokenGenerator = tokenGenerator;
         }
 
-        private string ConnectionString => _configuration.GetConnectionString("SpotifyDb") 
+        private string ConnectionString => _configuration.GetConnectionString("SpotifyDb")
             ?? throw new InvalidOperationException("Missing database connection string.");
 
         public async Task<string> Handle(LoginCommand request, CancellationToken cancellationToken)
@@ -109,9 +111,9 @@ namespace Backend.Models
             await connection.OpenAsync(cancellationToken);
 
             const string sql = @"
-                SELECT Id, Username, Email, PasswordHash 
-                FROM Users 
-                WHERE Email = @EmailOrUsername OR Username = @EmailOrUsername 
+                SELECT Id, Username, Email, PasswordHash
+                FROM Users
+                WHERE Email = @EmailOrUsername OR Username = @EmailOrUsername
                 LIMIT 1;";
 
             await using var command = new MySqlCommand(sql, connection);
@@ -120,36 +122,36 @@ namespace Backend.Models
             await using var reader = await command.ExecuteReaderAsync(cancellationToken);
             if (!await reader.ReadAsync(cancellationToken))
             {
-                throw new Exception("Tài khoản hoặc mật khẩu không chính xác.");
+                throw new Exception("T�i kho?n ho?c m?t kh?u kh�ng ch�nh x�c.");
             }
 
-            var id = AuthDbHelper.ConvertDbValueToString(reader["Id"], "Id"); 
+            var id = Convert.ToInt32(reader["Id"]);
             var username = AuthDbHelper.ConvertDbValueToString(reader["Username"], "Username");
             var email = AuthDbHelper.ConvertDbValueToString(reader["Email"], "Email");
             var dbPasswordHash = AuthDbHelper.ConvertDbValueToString(reader["PasswordHash"], "PasswordHash");
 
             if (!_passwordHasher.VerifyPassword(request.Password, dbPasswordHash))
             {
-                throw new Exception("Tài khoản hoặc mật khẩu không chính xác.");
+                throw new Exception("T�i kho?n ho?c m?t kh?u kh�ng ch�nh x�c.");
             }
 
-            var user = new User 
-            { 
-                Id = id, 
-                Username = username, 
-                Email = email 
+            var user = new User
+            {
+                Id = id,
+                Username = username,
+                Email = email
             };
 
             return _tokenGenerator.GenerateToken(user);
         }
     }
-    
+
     internal static class AuthDbHelper
     {
         public static string ConvertDbValueToString(object value, string columnName)
         {
             if (value == null || value == DBNull.Value) return string.Empty;
-            
+
             return value switch
             {
                 string text => text,
