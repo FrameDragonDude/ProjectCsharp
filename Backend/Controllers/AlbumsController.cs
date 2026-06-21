@@ -1,4 +1,4 @@
-using Backend.Infrastructure.Data;
+﻿using Backend.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,7 +16,7 @@ public class AlbumsController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetAlbum(string id)
+    public async Task<IActionResult> GetAlbum(int id)
     {
         var album = await _context.Albums
             .Include(a => a.Artist)
@@ -28,3 +28,4 @@ public class AlbumsController : ControllerBase
         return Ok(album);
     }
 }
+

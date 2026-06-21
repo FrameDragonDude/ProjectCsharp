@@ -1,9 +1,9 @@
-namespace Backend.Models.DTOs;
+﻿namespace Backend.Models.DTOs;
 
 public class FavoriteDto
 {
     public int UserId { get; set; }
-    public string MediaItemId { get; set; } = string.Empty;
+    public int MediaItemId { get; set; }
 }
 
 public class PlayHistoryDto
@@ -18,3 +18,4 @@ public class FollowDto
     public int TargetId { get; set; } 
     public string TargetType { get; set; } = "Artist"; // User or Artist
 }
+

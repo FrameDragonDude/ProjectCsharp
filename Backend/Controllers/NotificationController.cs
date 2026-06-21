@@ -1,4 +1,4 @@
-using Backend.Data;
+﻿using Backend.Data;
 using Backend.Domain.Entities;
 using Backend.Hubs;
 using Microsoft.AspNetCore.Authorization;
@@ -18,8 +18,8 @@ public class NotificationController(TuneVaultDbContext dbContext, IHubContext<No
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Notification>>> GetNotifications()
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null) return Unauthorized();
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
 
         var notifications = await dbContext.Notifications
             .Where(n => n.UserId == userId)
@@ -31,10 +31,10 @@ public class NotificationController(TuneVaultDbContext dbContext, IHubContext<No
     }
 
     [HttpPost("{id}/read")]
-    public async Task<IActionResult> MarkAsRead(string id)
+    public async Task<IActionResult> MarkAsRead(int id)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null) return Unauthorized();
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
 
         var notification = await dbContext.Notifications.FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
         if (notification != null)
@@ -49,8 +49,8 @@ public class NotificationController(TuneVaultDbContext dbContext, IHubContext<No
     [HttpPost("test-send")]
     public async Task<IActionResult> TestSendNotification([FromBody] SendNotificationRequest request)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null) return Unauthorized();
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
 
         var notification = new Notification
         {
@@ -62,7 +62,7 @@ public class NotificationController(TuneVaultDbContext dbContext, IHubContext<No
         dbContext.Notifications.Add(notification);
         await dbContext.SaveChangesAsync();
 
-        await hubContext.Clients.Group(userId).SendAsync("ReceiveNotification", notification);
+        await hubContext.Clients.Group(userId.ToString()).SendAsync("ReceiveNotification", notification);
 
         return Ok(notification);
     }
@@ -73,3 +73,4 @@ public class SendNotificationRequest
     public string Title { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
 }
+

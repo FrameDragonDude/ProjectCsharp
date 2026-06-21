@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using MySqlConnector;
 using System.ComponentModel.DataAnnotations;
 
@@ -7,14 +7,14 @@ namespace Backend.Models
     public sealed record UpdateProfileCommand(
         [Required] int UserId, 
         
-        [Required(ErrorMessage = "Tên hiển thị không được để trống.")]
-        [MaxLength(35, ErrorMessage = "Tên hiển thị không được vượt quá 35 ký tự.")]
+        [Required(ErrorMessage = "TÃªn hiá»ƒn thá»‹ khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.")]
+        [MaxLength(35, ErrorMessage = "TÃªn hiá»ƒn thá»‹ khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 35 kÃ½ tá»±.")]
         string FullName, 
         
-        [MaxLength(200, ErrorMessage = "Tiểu sử không được vượt quá 200 ký tự.")]
+        [MaxLength(200, ErrorMessage = "Tiá»ƒu sá»­ khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 200 kÃ½ tá»±.")]
         string? Bio, 
         
-        //[Url(ErrorMessage = "Đường dẫn ảnh đại diện không hợp lệ.")]
+        //[Url(ErrorMessage = "ÄÆ°á»ng dáº«n áº£nh Ä‘áº¡i diá»‡n khÃ´ng há»£p lá»‡.")]
         string? AvatarUrl
     ) : IRequest<bool>;
 
@@ -47,11 +47,11 @@ namespace Backend.Models
 
 
     public sealed record ToggleFollowCommand(
-        [Required] string FollowerId, 
-        [Required(ErrorMessage = "Mã đối tượng theo dõi không được để trống.")] 
-        string TargetId,
+        [Required] int FollowerId, 
+        [Required(ErrorMessage = "MÃ£ Ä‘á»‘i tÆ°á»£ng theo dÃµi khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.")] 
+        int TargetId,
         [Required]
-        [RegularExpression("^(User|Artist)$", ErrorMessage = "Loại đối tượng (TargetType) chỉ được phép là 'User' hoặc 'Artist'.")]
+        [RegularExpression("^(User|Artist)$", ErrorMessage = "Loáº¡i Ä‘á»‘i tÆ°á»£ng (TargetType) chá»‰ Ä‘Æ°á»£c phÃ©p lÃ  'User' hoáº·c 'Artist'.")]
         string TargetType
     ) : IRequest<string>;
 
@@ -86,7 +86,7 @@ namespace Backend.Models
                 deleteCmd.Parameters.AddWithValue("@TargetType", request.TargetType);
                 await deleteCmd.ExecuteNonQueryAsync(cancellationToken);
                 
-                return $"Đã hủy theo dõi {request.TargetType}.";
+                return $"ÄÃ£ há»§y theo dÃµi {request.TargetType}.";
             }
             else
             {
@@ -97,14 +97,14 @@ namespace Backend.Models
                 insertCmd.Parameters.AddWithValue("@TargetType", request.TargetType);
                 await insertCmd.ExecuteNonQueryAsync(cancellationToken);
                 
-                return $"Đã theo dõi {request.TargetType} thành công!";
+                return $"ÄÃ£ theo dÃµi {request.TargetType} thÃ nh cÃ´ng!";
             }
         }
     }
 
     public record UserProfileDto(string Email, string FullName, string Bio, string? AvatarUrl);
 
-    public record GetProfileQuery(string UserId) : IRequest<UserProfileDto?>;
+    public record GetProfileQuery(int UserId) : IRequest<UserProfileDto?>;
 
     public class GetProfileQueryHandler : IRequestHandler<GetProfileQuery, UserProfileDto?>
     {

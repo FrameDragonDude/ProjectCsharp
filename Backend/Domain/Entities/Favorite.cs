@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Backend.Domain.Entities;
@@ -6,7 +6,7 @@ namespace Backend.Domain.Entities;
 public class Favorite
 {
     public int UserId { get; set; }
-    public string MediaItemId { get; set; } = string.Empty;
+    public int MediaItemId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation Properties
@@ -16,3 +16,4 @@ public class Favorite
     [ForeignKey("MediaItemId")]
     public virtual MediaItem? MediaItem { get; set; }
 }
+

@@ -1,4 +1,4 @@
-using Backend.Models;
+﻿using Backend.Models;
 using System.Globalization;
 using System.Text;
 using MySqlConnector;
@@ -55,7 +55,7 @@ public sealed class MySqlMusicCatalogRepository(IConfiguration configuration) : 
         await connection.OpenAsync(cancellationToken);
 
         const string sql = @"
-SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.OwnerId, m.AlbumId,
+SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId,
     a.Title AS AlbumTitle, art.Name AS ArtistName, COALESCE(m.CoverImageUrl, a.CoverImageUrl) AS CoverImageUrl
 FROM MediaItems m
 LEFT JOIN Albums a ON a.Id = m.AlbumId
@@ -107,11 +107,11 @@ LIMIT 1;";
         }
 
         return new PlaylistDto(
-            GetRequiredDbString(reader, "Id"),
+            reader.GetInt32(reader.GetOrdinal("Id")),
             reader.GetString("Name"),
             reader.IsDBNull(reader.GetOrdinal("Description")) ? null : reader.GetString("Description"),
             reader.GetBoolean("IsPublic"),
-            GetRequiredDbString(reader, "CreatedByUserId"),
+            reader.GetInt32(reader.GetOrdinal("CreatedByUserId")),
             Convert.ToInt32(reader["TrackCount"]),
             reader.IsDBNull(reader.GetOrdinal("CoverImageUrl")) ? null : reader.GetString("CoverImageUrl"));
     }
@@ -122,7 +122,7 @@ LIMIT 1;";
         await connection.OpenAsync(cancellationToken);
 
         const string sql = @"
-SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.OwnerId, m.AlbumId,
+SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId,
     a.Title AS AlbumTitle, art.Name AS ArtistName, COALESCE(m.CoverImageUrl, a.CoverImageUrl) AS CoverImageUrl
 FROM PlaylistTracks pt
 INNER JOIN MediaItems m ON m.Id = pt.MediaItemId
@@ -180,12 +180,12 @@ ORDER BY m.CreatedAt DESC;";
                 var duration = reader.GetString("Duration");
                 var artistName = reader.GetString("ArtistName");
                 results.Add(new SearchResultDto(
-                    GetRequiredDbString(reader, "Id"),
+                    reader.GetInt32(reader.GetOrdinal("Id")),
                     title,
-                    $"{artistName} • {duration}",
+                    $"{artistName} â€¢ {duration}",
                     "Song",
                     reader.GetString("MediaType"),
-                    GetNullableDbString(reader, "AlbumId"),
+                    reader.IsDBNull(reader.GetOrdinal("AlbumId")) ? null : reader.GetInt32(reader.GetOrdinal("AlbumId")),
                     reader.GetString("FilePath"),
                     reader.IsDBNull(reader.GetOrdinal("CoverImageUrl")) ? null : reader.GetString("CoverImageUrl")));
             }
@@ -206,9 +206,9 @@ ORDER BY a.ReleaseDate DESC;";
             {
                 var artistName = reader.GetString("ArtistName");
                 results.Add(new SearchResultDto(
-                    GetRequiredDbString(reader, "Id"),
+                    reader.GetInt32(reader.GetOrdinal("Id")),
                     reader.GetString("Title"),
-                    $"{artistName} • Album",
+                    $"{artistName} â€¢ Album",
                     "Album",
                     null,
                     null,
@@ -237,12 +237,12 @@ ORDER BY m.CreatedAt DESC;";
                 var artistName = reader.GetString("ArtistName");
                 var duration = reader.GetString("Duration");
                 results.Add(new SearchResultDto(
-                    GetRequiredDbString(reader, "Id"),
+                    reader.GetInt32(reader.GetOrdinal("Id")),
                     reader.GetString("Title"),
-                    $"{artistName} • {duration}",
+                    $"{artistName} â€¢ {duration}",
                     "Video",
                     reader.GetString("MediaType"),
-                    GetNullableDbString(reader, "AlbumId"),
+                    reader.IsDBNull(reader.GetOrdinal("AlbumId")) ? null : reader.GetInt32(reader.GetOrdinal("AlbumId")),
                     reader.GetString("FilePath"),
                     reader.IsDBNull(reader.GetOrdinal("CoverImageUrl")) ? null : reader.GetString("CoverImageUrl")));
             }
@@ -272,9 +272,9 @@ ORDER BY p.CreatedAt DESC;";
             while (await reader.ReadAsync(cancellationToken))
             {
                 results.Add(new SearchResultDto(
-                    GetRequiredDbString(reader, "Id"),
+                    reader.GetInt32(reader.GetOrdinal("Id")),
                     reader.GetString("Name"),
-                    $"{reader.GetString("TrackCount")} bài hát",
+                    $"{reader.GetString("TrackCount")} bÃ i hÃ¡t",
                     "Playlist",
                     null,
                     null,
@@ -288,7 +288,7 @@ ORDER BY p.CreatedAt DESC;";
 
     public async Task<PlaylistDto> CreatePlaylistAsync(CreatePlaylistRequest request, CancellationToken cancellationToken = default)
     {
-        var playlistId = Guid.NewGuid().ToString();
+        var playlistId = 0;
 
         await using var connection = new MySqlConnection(ConnectionString);
         await connection.OpenAsync(cancellationToken);
@@ -311,18 +311,18 @@ VALUES (@Id, @Name, @Description, 1, @CreatedByUserId);";
         return new PlaylistDto(playlistId, request.Name, request.Description, true, createdByUserId, 0, null);
     }
 
-    private static async Task<string> ResolveUserIdAsync(MySqlConnection connection, string? requestedUserId, CancellationToken cancellationToken)
+    private static async Task<int> ResolveUserIdAsync(MySqlConnection connection, int? requestedUserId, CancellationToken cancellationToken)
     {
-        if (!string.IsNullOrWhiteSpace(requestedUserId))
+        if (requestedUserId.HasValue)
         {
             const string requestedUserSql = "SELECT Id FROM Users WHERE Id = @UserId LIMIT 1;";
             await using var requestedUserCommand = new MySqlCommand(requestedUserSql, connection);
-            requestedUserCommand.Parameters.AddWithValue("@UserId", requestedUserId);
+            requestedUserCommand.Parameters.AddWithValue("@UserId", requestedUserId.Value);
 
             var requestedUser = await requestedUserCommand.ExecuteScalarAsync(cancellationToken);
             if (requestedUser is not null)
             {
-                return ConvertDbValueToString(requestedUser, "Id");
+                return Convert.ToInt32(requestedUser, CultureInfo.InvariantCulture);
             }
         }
 
@@ -332,7 +332,7 @@ VALUES (@Id, @Name, @Description, 1, @CreatedByUserId);";
         var fallbackUser = await fallbackUserCommand.ExecuteScalarAsync(cancellationToken);
         if (fallbackUser is not null)
         {
-            return ConvertDbValueToString(fallbackUser, "Id");
+            return Convert.ToInt32(fallbackUser, CultureInfo.InvariantCulture);
         }
 
         throw new InvalidOperationException("Cannot continue because the Users table is empty.");
@@ -355,7 +355,7 @@ VALUES (@PlaylistId, @MediaItemId);";
 
     public async Task<AlbumDto> CreateAlbumAsync(CreateAlbumRequest request, CancellationToken cancellationToken = default)
     {
-        var albumId = Guid.NewGuid().ToString();
+        var albumId = 0;
         var title = request.Title?.Trim() ?? string.Empty;
         var artistName = request.ArtistName?.Trim() ?? "TuneVault";
         var cover = string.IsNullOrWhiteSpace(request.CoverImageUrl) ? null : request.CoverImageUrl.Trim();
@@ -372,7 +372,7 @@ VALUES (@PlaylistId, @MediaItemId);";
         try
         {
             // find artist
-            string artistId = null!;
+            int artistId = 0;
             const string findArtistSql = @"SELECT Id FROM Artists WHERE Name = @Name LIMIT 1;";
             await using (var findCmd = new MySqlCommand(findArtistSql, connection, transaction))
             {
@@ -380,17 +380,17 @@ VALUES (@PlaylistId, @MediaItemId);";
                 var res = await findCmd.ExecuteScalarAsync(cancellationToken);
                 if (res != null)
                 {
-                    artistId = ConvertDbValueToString(res, "Id");
+                    artistId = Convert.ToInt32(res, CultureInfo.InvariantCulture);
                 }
             }
 
-            if (string.IsNullOrEmpty(artistId))
+            if (artistId <= 0)
             {
-                artistId = Guid.NewGuid().ToString();
-                const string insertArtist = @"INSERT INTO Artists (Id, Name) VALUES (@Id, @Name);";
+                artistId = (int)0;
+                const string insertArtist = @"INSERT INTO Artists (Name) VALUES (@Name);";
                 await using (var insertCmd = new MySqlCommand(insertArtist, connection, transaction))
                 {
-                    insertCmd.Parameters.AddWithValue("@Id", artistId);
+
                     insertCmd.Parameters.AddWithValue("@Name", artistName);
                     await insertCmd.ExecuteNonQueryAsync(cancellationToken);
                 }
@@ -453,10 +453,10 @@ LIMIT 1;";
         if (!await reader.ReadAsync(cancellationToken)) return null;
 
         return new AlbumDto(
-            GetRequiredDbString(reader, "Id"),
+            reader.GetInt32(reader.GetOrdinal("Id")),
             reader.GetString("Title"),
             reader.IsDBNull(reader.GetOrdinal("CoverImageUrl")) ? null : reader.GetString("CoverImageUrl"),
-            GetRequiredDbString(reader, "ArtistId"),
+            reader.GetInt32(reader.GetOrdinal("ArtistId")),
             reader.GetString("ArtistName"),
             reader.GetString("ReleaseDate"));
     }
@@ -479,7 +479,7 @@ LIMIT 1;";
             }
 
             const string selectSql = @"
-        SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.OwnerId, m.AlbumId,
+        SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId,
                a.Title AS AlbumTitle, art.Name AS ArtistName, COALESCE(m.CoverImageUrl, a.CoverImageUrl) AS CoverImageUrl
         FROM MediaItems m
         LEFT JOIN Albums a ON a.Id = m.AlbumId
@@ -515,7 +515,7 @@ UPDATE MediaItems SET AlbumId = @AlbumId WHERE Id = @Id;";
     private static async Task<IReadOnlyList<MediaItemDto>> LoadMediaItemsAsync(MySqlConnection connection, string mediaType, CancellationToken cancellationToken)
     {
         const string sql = @"
-SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.OwnerId, m.AlbumId,
+SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId,
        a.Title AS AlbumTitle, art.Name AS ArtistName, COALESCE(m.CoverImageUrl, a.CoverImageUrl) AS CoverImageUrl
 FROM MediaItems m
 LEFT JOIN Albums a ON a.Id = m.AlbumId
@@ -551,10 +551,10 @@ ORDER BY a.ReleaseDate DESC;";
         while (await reader.ReadAsync(cancellationToken))
         {
             items.Add(new AlbumDto(
-                GetRequiredDbString(reader, "Id"),
+                reader.GetInt32(reader.GetOrdinal("Id")),
                 reader.GetString("Title"),
                 reader.IsDBNull(reader.GetOrdinal("CoverImageUrl")) ? null : reader.GetString("CoverImageUrl"),
-                GetRequiredDbString(reader, "ArtistId"),
+                reader.GetInt32(reader.GetOrdinal("ArtistId")),
                 reader.GetString("ArtistName"),
                 reader.GetString("ReleaseDate")));
         }
@@ -587,11 +587,11 @@ ORDER BY p.CreatedAt DESC;";
         while (await reader.ReadAsync(cancellationToken))
         {
             items.Add(new PlaylistDto(
-                GetRequiredDbString(reader, "Id"),
+                reader.GetInt32(reader.GetOrdinal("Id")),
                 reader.GetString("Name"),
                 reader.IsDBNull(reader.GetOrdinal("Description")) ? null : reader.GetString("Description"),
                 reader.GetBoolean("IsPublic"),
-                GetRequiredDbString(reader, "CreatedByUserId"),
+                reader.GetInt32(reader.GetOrdinal("CreatedByUserId")),
                 Convert.ToInt32(reader["TrackCount"]),
                 reader.IsDBNull(reader.GetOrdinal("CoverImageUrl")) ? null : reader.GetString("CoverImageUrl")));
         }
@@ -602,13 +602,13 @@ ORDER BY p.CreatedAt DESC;";
     private static MediaItemDto MapMediaItem(MySqlDataReader reader)
     {
         return new MediaItemDto(
-            GetRequiredDbString(reader, "Id"),
+            reader.GetInt32(reader.GetOrdinal("Id")),
             reader.GetString("Title"),
             reader.GetString("FilePath"),
             reader.GetString("Duration"),
             reader.GetString("MediaType"),
-            GetRequiredDbString(reader, "OwnerId"),
-            GetNullableDbString(reader, "AlbumId"),
+            reader.GetInt32(reader.GetOrdinal("ArtistId")),
+            reader.IsDBNull(reader.GetOrdinal("AlbumId")) ? null : reader.GetInt32(reader.GetOrdinal("AlbumId")),
             reader.IsDBNull(reader.GetOrdinal("AlbumTitle")) ? null : reader.GetString("AlbumTitle"),
             reader.IsDBNull(reader.GetOrdinal("ArtistName")) ? null : reader.GetString("ArtistName"),
             reader.IsDBNull(reader.GetOrdinal("CoverImageUrl")) ? null : reader.GetString("CoverImageUrl"));
@@ -660,12 +660,11 @@ ORDER BY p.CreatedAt DESC;";
         try
         {
             const string sql = @"
-INSERT INTO PlayHistories (Id, UserId, MediaItemId)
-VALUES (@Id, @UserId, @MediaItemId);";
+INSERT INTO PlayHistories (UserId, MediaItemId, PlayedAt)
+VALUES (@UserId, @MediaItemId, UTC_TIMESTAMP());";
 
             await using (var dbCommand = new MySqlCommand(sql, connection, transaction))
             {
-                dbCommand.Parameters.AddWithValue("@Id", Guid.NewGuid().ToString());
                 dbCommand.Parameters.AddWithValue("@UserId", userId);
                 dbCommand.Parameters.AddWithValue("@MediaItemId", command.MediaItemId);
 
@@ -702,16 +701,16 @@ WHERE UserId = @UserId
 
     public async Task<NotificationDto> ShareMediaAsync(ShareMediaCommand command, CancellationToken cancellationToken = default)
     {
-        var hasMediaItem = !string.IsNullOrWhiteSpace(command.MediaItemId);
-        var hasPlaylist = !string.IsNullOrWhiteSpace(command.PlaylistId);
+        var hasMediaItem = command.MediaItemId.HasValue;
+        var hasPlaylist = command.PlaylistId.HasValue;
 
         if (hasMediaItem == hasPlaylist)
         {
             throw new InvalidOperationException("Share exactly one item: MediaItemId or PlaylistId.");
         }
 
-        var shareId = Guid.NewGuid().ToString();
-        var notificationId = Guid.NewGuid().ToString();
+        var shareId = 0;
+        var notificationId = 0;
         var createdAt = DateTime.Now;
 
         var payload = JsonSerializer.Serialize(new
@@ -784,7 +783,7 @@ VALUES (@Id, @UserId, 'Share', @PayloadJson, 0, @CreatedAt);";
         var recentPlays = new List<MediaItemDto>();
 
         const string historySql = @"
-SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.OwnerId, m.AlbumId,
+SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId,
        a.Title AS AlbumTitle, art.Name AS ArtistName, a.CoverImageUrl
 FROM PlayHistories ph
 INNER JOIN MediaItems m ON m.Id = ph.MediaItemId
@@ -796,7 +795,7 @@ LIMIT @Limit;";
 
         await using (var command = new MySqlCommand(historySql, connection))
         {
-            command.Parameters.AddWithValue("@UserId", userId);
+            command.Parameters.AddWithValue("@UserId", int.Parse(userId, System.Globalization.CultureInfo.InvariantCulture));
             command.Parameters.AddWithValue("@Limit", Math.Clamp(historyLimit, 1, 50));
 
             await using var reader = await command.ExecuteReaderAsync(cancellationToken);
@@ -809,7 +808,7 @@ LIMIT @Limit;";
         var candidateItems = new List<MediaItemDto>();
 
         const string candidatesSql = @"
-SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.OwnerId, m.AlbumId,
+SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId,
        a.Title AS AlbumTitle, art.Name AS ArtistName, a.CoverImageUrl
 FROM MediaItems m
 LEFT JOIN Albums a ON a.Id = m.AlbumId
@@ -824,7 +823,7 @@ LIMIT @Limit;";
 
         await using (var command = new MySqlCommand(candidatesSql, connection))
         {
-            command.Parameters.AddWithValue("@UserId", userId);
+            command.Parameters.AddWithValue("@UserId", int.Parse(userId, System.Globalization.CultureInfo.InvariantCulture));
             command.Parameters.AddWithValue("@Limit", Math.Clamp(candidateLimit, 1, 100));
 
             await using var reader = await command.ExecuteReaderAsync(cancellationToken);
@@ -849,15 +848,15 @@ LIMIT @Limit;";
         ORDER BY CreatedAt DESC LIMIT 50; ";
 
         await using var command = new MySqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@UserId", userId);
+        command.Parameters.AddWithValue("@UserId", int.Parse(userId, System.Globalization.CultureInfo.InvariantCulture));
 
         var items = new List<NotificationDto>();
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
             items.Add( new NotificationDto( 
-                GetRequiredDbString(reader, "Id"),
-                GetRequiredDbString(reader, "UserId"),
+                reader.GetInt32(reader.GetOrdinal("Id")),
+                reader.GetInt32(reader.GetOrdinal("UserId")),
                 reader.GetString("Type"),
                 reader.GetString("PayloadJson"),
                 reader.GetBoolean("IsRead"),
@@ -890,7 +889,7 @@ LIMIT @Limit;";
         UPDATE Notifications SET IsRead = 1 WHERE UserId = @UserId AND IsRead = 0;";
 
         await using var command = new MySqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@UserId", userId);
+        command.Parameters.AddWithValue("@UserId", int.Parse(userId, System.Globalization.CultureInfo.InvariantCulture));
         await command. ExecuteNonQueryAsync(cancellationToken);
         
     }
@@ -910,7 +909,7 @@ LIMIT @Limit;";
         LIMIT @Limit;";
         
         await using var command = new MySqlCommand(sql,connection);
-        command.Parameters.AddWithValue("@UserId", userId);
+        command.Parameters.AddWithValue("@UserId", int.Parse(userId, System.Globalization.CultureInfo.InvariantCulture));
         command.Parameters.AddWithValue("@Limit", limit);
 
         var items = new List<PlayHistoryDto>();
@@ -918,8 +917,8 @@ LIMIT @Limit;";
         while(await reader.ReadAsync(cancellationToken))
         {
             items.Add(new PlayHistoryDto(
-                GetRequiredDbString(reader,"Id"),
-                GetRequiredDbString(reader,"MediaItemId"),
+                reader.GetInt32(reader.GetOrdinal("Id")),
+                reader.GetInt32(reader.GetOrdinal("MediaItemId")),
                 reader.IsDBNull(reader.GetOrdinal("MediaTitle")) ? null : reader.GetString("MediaTitle"),
                 reader.GetDateTime("PlayedAt")
             ));
@@ -928,4 +927,9 @@ LIMIT @Limit;";
     }
 
 }
+
+
+
+
+
 

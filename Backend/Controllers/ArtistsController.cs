@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Backend.Models;
 using Microsoft.AspNetCore.Mvc;
 using MySqlConnector;
@@ -51,7 +51,7 @@ ORDER BY ar.Name;";
         while (await reader.ReadAsync(cancellationToken))
         {
             items.Add(new ArtistSummaryDto(
-                GetRequiredDbString(reader, "Id"),
+                reader.GetInt32(reader.GetOrdinal("Id")),
                 reader.GetString("Name"),
                 reader.IsDBNull(reader.GetOrdinal("Bio")) ? null : reader.GetString("Bio"),
                 reader.IsDBNull(reader.GetOrdinal("AvatarUrl")) ? null : reader.GetString("AvatarUrl"),
@@ -64,7 +64,7 @@ ORDER BY ar.Name;";
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<ArtistDetailDto>> GetArtist(string id, CancellationToken cancellationToken)
+    public async Task<ActionResult<ArtistDetailDto>> GetArtist(int id, CancellationToken cancellationToken)
     {
         await using var connection = new MySqlConnection(ConnectionString);
         await connection.OpenAsync(cancellationToken);
@@ -83,7 +83,7 @@ LIMIT 1;";
             if (await reader.ReadAsync(cancellationToken))
             {
                 artist = new ArtistSummaryDto(
-                    GetRequiredDbString(reader, "Id"),
+                    reader.GetInt32(reader.GetOrdinal("Id")),
                     reader.GetString("Name"),
                     reader.IsDBNull(reader.GetOrdinal("Bio")) ? null : reader.GetString("Bio"),
                     reader.IsDBNull(reader.GetOrdinal("AvatarUrl")) ? null : reader.GetString("AvatarUrl"),
@@ -113,10 +113,10 @@ ORDER BY al.ReleaseDate DESC, al.Title ASC;";
             while (await reader.ReadAsync(cancellationToken))
             {
                 albumDtos.Add(new AlbumDto(
-                    GetRequiredDbString(reader, "Id"),
+                    reader.GetInt32(reader.GetOrdinal("Id")),
                     reader.GetString("Title"),
                     reader.IsDBNull(reader.GetOrdinal("CoverImageUrl")) ? null : reader.GetString("CoverImageUrl"),
-                    GetRequiredDbString(reader, "ArtistId"),
+                    reader.GetInt32(reader.GetOrdinal("ArtistId")),
                     reader.GetString("ArtistName"),
                     reader.GetString("ReleaseDate")));
             }
@@ -139,14 +139,14 @@ ORDER BY mi.CreatedAt DESC, mi.Title ASC;";
             while (await reader.ReadAsync(cancellationToken))
             {
                 songs.Add(new MediaItemDto(
-                    GetRequiredDbString(reader, "Id"),
+                    reader.GetInt32(reader.GetOrdinal("Id")),
                     reader.GetString("Title"),
                     reader.GetString("FilePath"),
                     reader.GetString("Duration"),
                     reader.GetString("MediaType"),
-                    GetRequiredDbString(reader, "OwnerId"),
-                    reader.IsDBNull(reader.GetOrdinal("AlbumId")) ? null : GetNullableDbString(reader, "AlbumId"),
-                    reader.GetString("AlbumTitle"),
+                    reader.GetInt32(reader.GetOrdinal("ArtistId")),
+                    reader.IsDBNull(reader.GetOrdinal("AlbumId")) ? null : (int?)reader.GetInt32(reader.GetOrdinal("AlbumId")),
+                    reader.IsDBNull(reader.GetOrdinal("AlbumTitle")) ? string.Empty : reader.GetString("AlbumTitle"),
                     reader.GetString("ArtistName"),
                     reader.IsDBNull(reader.GetOrdinal("CoverImageUrl")) ? null : reader.GetString("CoverImageUrl")));
             }
@@ -202,3 +202,5 @@ ORDER BY mi.CreatedAt DESC, mi.Title ASC;";
         };
     }
 }
+
+

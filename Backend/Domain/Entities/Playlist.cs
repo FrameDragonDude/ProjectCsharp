@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -19,7 +19,7 @@ public class Playlist
     public bool IsPublic { get; set; } = true;
 
     [Required]
-    public string CreatedByUserId { get; set; } = string.Empty;
+    public int CreatedByUserId { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
@@ -29,3 +29,4 @@ public class Playlist
 
     public virtual ICollection<PlaylistTrack> PlaylistTracks { get; set; } = new List<PlaylistTrack>();
 }
+

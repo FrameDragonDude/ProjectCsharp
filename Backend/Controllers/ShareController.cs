@@ -1,4 +1,4 @@
-using Backend.Data;
+﻿using Backend.Data;
 using Backend.Domain.Entities;
 using Backend.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -17,8 +17,8 @@ public class ShareController(TuneVaultDbContext dbContext, IMusicCatalogReposito
     [HttpPost]
     public async Task<IActionResult> ShareMedia([FromBody] ShareRequest request)
     {
-        var senderId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (senderId == null) return Unauthorized();
+        var senderIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(senderIdValue, out var senderId)) return Unauthorized();
 
         var share = new MediaShare
         {
@@ -38,8 +38,8 @@ public class ShareController(TuneVaultDbContext dbContext, IMusicCatalogReposito
     [HttpGet("inbox")]
     public async Task<ActionResult> GetInbox()
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null) return Unauthorized();
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
 
         var shares = await dbContext.MediaShares
             .Where(s => s.ReceiverUserId == userId)
@@ -53,17 +53,17 @@ public class ShareController(TuneVaultDbContext dbContext, IMusicCatalogReposito
             var sender = await dbContext.UserProfiles.FirstOrDefaultAsync(p => p.UserId == share.SenderUserId);
             var senderName = sender?.FullName ?? "Someone";
 
-            if (!string.IsNullOrEmpty(share.MediaItemId))
+            if (share.MediaItemId.HasValue)
             {
-                var media = await repository.GetMediaItemByIdAsync(share.MediaItemId);
+                var media = await repository.GetMediaItemByIdAsync(share.MediaItemId.Value.ToString());
                 if (media != null)
                 {
                     results.Add(new { share.Id, SenderName = senderName, Item = media, Type = "Media", share.SharedAt });
                 }
             }
-            else if (!string.IsNullOrEmpty(share.PlaylistId))
+            else if (share.PlaylistId.HasValue)
             {
-                var playlist = await repository.GetPlaylistByIdAsync(share.PlaylistId);
+                var playlist = await repository.GetPlaylistByIdAsync(share.PlaylistId.Value.ToString());
                 if (playlist != null)
                 {
                     results.Add(new { share.Id, SenderName = senderName, Item = playlist, Type = "Playlist", share.SharedAt });
@@ -77,7 +77,9 @@ public class ShareController(TuneVaultDbContext dbContext, IMusicCatalogReposito
 
 public class ShareRequest
 {
-    public string ReceiverUserId { get; set; } = string.Empty;
-    public string? MediaItemId { get; set; }
-    public string? PlaylistId { get; set; }
+    public int ReceiverUserId { get; set; }
+    public int? MediaItemId { get; set; }
+    public int? PlaylistId { get; set; }
 }
+
+
