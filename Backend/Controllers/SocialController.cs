@@ -19,11 +19,6 @@ public sealed class SocialController(
         [FromBody] RecordPlayHistoryCommand command,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(command.UserId))
-        {
-            return BadRequest("UserId is required.");
-        }
-
         if (string.IsNullOrWhiteSpace(command.MediaItemId))
         {
             return BadRequest("MediaItemId is required.");
@@ -116,7 +111,7 @@ public sealed class SocialController(
     public async Task<ActionResult<IReadOnlyList<PlayHistoryDto>>> GetRecentPlayHistories(
         string userId, CancellationToken cancellationToken)
     {
-        return Ok(await repository.GetRecentPlayHistoriesAsync(userId, 10, cancellationToken));
+        return Ok(await repository.GetRecentPlayHistoriesAsync(userId, 20, cancellationToken));
     }
 
 }

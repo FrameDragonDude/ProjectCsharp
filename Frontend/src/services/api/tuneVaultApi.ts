@@ -1,5 +1,5 @@
 import axiosClient from './axiosClient';
-import type { LibrarySummary, MediaItem, Playlist, SearchResult } from '../../types';
+import type { ArtistDetail, ArtistSummary, LibrarySummary, MediaItem, Playlist, PlayHistory, SearchResult } from '../../types';
 
 export async function getLibrarySummary(): Promise<LibrarySummary> {
   const response = await axiosClient.get<LibrarySummary>('/library/summary');
@@ -18,6 +18,16 @@ export async function getPlaylistTracks(playlistId: string): Promise<MediaItem[]
 
 export async function getPlaylistById(playlistId: string): Promise<Playlist | undefined> {
   const response = await axiosClient.get<Playlist>(`/playlists/${playlistId}`);
+  return response.data;
+}
+
+export async function getArtists(): Promise<ArtistSummary[]> {
+  const response = await axiosClient.get<ArtistSummary[]>('/artists');
+  return response.data;
+}
+
+export async function getArtistById(id: string): Promise<ArtistDetail> {
+  const response = await axiosClient.get<ArtistDetail>(`/artists/${id}`);
   return response.data;
 }
 
@@ -48,8 +58,26 @@ export async function addMediaToPlaylist(playlistId: string, mediaItemId: string
   return response.data.playlists;
 }
 
+export async function removeMediaFromPlaylist(playlistId: string, mediaItemId: string): Promise<void> {
+  await axiosClient.delete(`/Playlists/remove-track`, {
+    params: { playlistId, mediaItemId },
+  });
+}
+
 export async function getVideoItems(): Promise<MediaItem[]> {
   const response = await axiosClient.get<MediaItem[]>('/media/video');
+  return response.data;
+}
+
+export async function recordPlayHistory(mediaItemId: string, userId?: string): Promise<void> {
+  await axiosClient.post('/play-histories', {
+    userId: userId ?? '',
+    mediaItemId,
+  });
+}
+
+export async function getRecentPlayHistories(userId = ''): Promise<PlayHistory[]> {
+  const response = await axiosClient.get<PlayHistory[]>(`/play-histories/${userId}/recent`);
   return response.data;
 }
 
@@ -72,3 +100,43 @@ export async function assignMediaToAlbum(albumId: string, mediaItemId: string) {
   const response = await axiosClient.get('/library/summary');
   return response.data as any;
 }
+
+export async function login(emailOrUsername: string, password: string) {
+  const response = await axiosClient.post('/auth/login', {
+    emailOrUsername,
+    password,
+  });
+  return response.data as { token: string; message: string };
+}
+
+export async function register(username: string, email: string, password: string, fullName: string) {
+  const response = await axiosClient.post('/auth/register', {
+    username,
+    email,
+    password,
+    fullName,
+  });
+  return response.data as { userId: string; message: string };
+}
+
+export async function getProfile() {
+  const response = await axiosClient.get('/user/profile');
+  return response.data as { id: string; username: string; email: string; fullName: string; bio: string; avatarUrl: string; location?: string; website?: string };
+}
+
+export async function updateProfile(fullName: string, bio: string, avatarUrl: string) {
+  const response = await axiosClient.put('/user/profile', {
+    fullName,
+    bio,
+    avatarUrl,
+  });
+  return response.data;
+}
+
+export async function toggleFollow(targetId: string, type: 'User' | 'Artist' = 'Artist') {
+  const response = await axiosClient.post(`/follow/${targetId}`, null, {
+    params: { type },
+  });
+  return response.data;
+}
+

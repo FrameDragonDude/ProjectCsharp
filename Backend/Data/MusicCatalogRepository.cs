@@ -217,6 +217,72 @@ ORDER BY a.ReleaseDate DESC;";
             }
         }
 
+        const string videoSql = @"
+SELECT m.Id, m.Title, m.Duration, m.MediaType, m.FilePath, m.AlbumId,
+       COALESCE(m.CoverImageUrl, a.CoverImageUrl) AS CoverImageUrl,
+       COALESCE(art.Name, 'TuneVault') AS ArtistName
+FROM MediaItems m
+LEFT JOIN Albums a ON a.Id = m.AlbumId
+LEFT JOIN Artists art ON art.Id = a.ArtistId
+WHERE m.MediaType = 'Video'
+  AND (@Query = '' OR m.Title LIKE CONCAT('%', @Query, '%') OR art.Name LIKE CONCAT('%', @Query, '%'))
+ORDER BY m.CreatedAt DESC;";
+
+        await using (var command = new MySqlCommand(videoSql, connection))
+        {
+            command.Parameters.AddWithValue("@Query", normalized);
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                var artistName = reader.GetString("ArtistName");
+                var duration = reader.GetString("Duration");
+                results.Add(new SearchResultDto(
+                    GetRequiredDbString(reader, "Id"),
+                    reader.GetString("Title"),
+                    $"{artistName} • {duration}",
+                    "Video",
+                    reader.GetString("MediaType"),
+                    GetNullableDbString(reader, "AlbumId"),
+                    reader.GetString("FilePath"),
+                    reader.IsDBNull(reader.GetOrdinal("CoverImageUrl")) ? null : reader.GetString("CoverImageUrl")));
+            }
+        }
+
+        const string playlistSql = @"
+SELECT p.Id, p.Name, p.Description, p.IsPublic, p.CreatedByUserId, COUNT(pt.MediaItemId) AS TrackCount,
+    (
+        SELECT COALESCE(m.CoverImageUrl, a.CoverImageUrl)
+        FROM PlaylistTracks pt2
+        INNER JOIN MediaItems m ON m.Id = pt2.MediaItemId
+        LEFT JOIN Albums a ON a.Id = m.AlbumId
+        WHERE pt2.PlaylistId = p.Id
+        ORDER BY pt2.AddedAt DESC
+        LIMIT 1
+    ) AS CoverImageUrl
+FROM Playlists p
+LEFT JOIN PlaylistTracks pt ON pt.PlaylistId = p.Id
+WHERE (@Query = '' OR p.Name LIKE CONCAT('%', @Query, '%') OR p.Description LIKE CONCAT('%', @Query, '%'))
+GROUP BY p.Id, p.Name, p.Description, p.IsPublic, p.CreatedByUserId, p.CreatedAt
+ORDER BY p.CreatedAt DESC;";
+
+        await using (var command = new MySqlCommand(playlistSql, connection))
+        {
+            command.Parameters.AddWithValue("@Query", normalized);
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                results.Add(new SearchResultDto(
+                    GetRequiredDbString(reader, "Id"),
+                    reader.GetString("Name"),
+                    $"{reader.GetString("TrackCount")} bài hát",
+                    "Playlist",
+                    null,
+                    null,
+                    null,
+                    reader.IsDBNull(reader.GetOrdinal("CoverImageUrl")) ? null : reader.GetString("CoverImageUrl")));
+            }
+        }
+
         return results;
     }
 
@@ -227,7 +293,7 @@ ORDER BY a.ReleaseDate DESC;";
         await using var connection = new MySqlConnection(ConnectionString);
         await connection.OpenAsync(cancellationToken);
 
-        var createdByUserId = await ResolvePlaylistOwnerIdAsync(connection, request.CreatedByUserId, cancellationToken);
+        var createdByUserId = await ResolveUserIdAsync(connection, request.CreatedByUserId, cancellationToken);
 
         const string sql = @"
 INSERT INTO Playlists (Id, Name, Description, IsPublic, CreatedByUserId)
@@ -245,7 +311,7 @@ VALUES (@Id, @Name, @Description, 1, @CreatedByUserId);";
         return new PlaylistDto(playlistId, request.Name, request.Description, true, createdByUserId, 0, null);
     }
 
-    private static async Task<string> ResolvePlaylistOwnerIdAsync(MySqlConnection connection, string? requestedUserId, CancellationToken cancellationToken)
+    private static async Task<string> ResolveUserIdAsync(MySqlConnection connection, string? requestedUserId, CancellationToken cancellationToken)
     {
         if (!string.IsNullOrWhiteSpace(requestedUserId))
         {
@@ -269,7 +335,7 @@ VALUES (@Id, @Name, @Description, 1, @CreatedByUserId);";
             return ConvertDbValueToString(fallbackUser, "Id");
         }
 
-        throw new InvalidOperationException("Cannot create playlist because the Users table is empty.");
+        throw new InvalidOperationException("Cannot continue because the Users table is empty.");
     }
 
     public async Task AddMediaToPlaylistAsync(string playlistId, string mediaItemId, CancellationToken cancellationToken = default)
@@ -588,16 +654,50 @@ ORDER BY p.CreatedAt DESC;";
         await using var connection = new MySqlConnection(ConnectionString);
         await connection.OpenAsync(cancellationToken);
 
-        const string sql = @"
+        var userId = await ResolveUserIdAsync(connection, command.UserId, cancellationToken);
+
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            const string sql = @"
 INSERT INTO PlayHistories (Id, UserId, MediaItemId)
 VALUES (@Id, @UserId, @MediaItemId);";
 
-        await using var dbCommand = new MySqlCommand(sql, connection);
-        dbCommand.Parameters.AddWithValue("@Id", Guid.NewGuid().ToString());
-        dbCommand.Parameters.AddWithValue("@UserId", command.UserId);
-        dbCommand.Parameters.AddWithValue("@MediaItemId", command.MediaItemId);
+            await using (var dbCommand = new MySqlCommand(sql, connection, transaction))
+            {
+                dbCommand.Parameters.AddWithValue("@Id", Guid.NewGuid().ToString());
+                dbCommand.Parameters.AddWithValue("@UserId", userId);
+                dbCommand.Parameters.AddWithValue("@MediaItemId", command.MediaItemId);
 
-        await dbCommand.ExecuteNonQueryAsync(cancellationToken);
+                await dbCommand.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            const string trimSql = @"
+DELETE FROM PlayHistories
+WHERE UserId = @UserId
+  AND Id NOT IN (
+      SELECT Id FROM (
+          SELECT Id
+          FROM PlayHistories
+          WHERE UserId = @UserId
+          ORDER BY PlayedAt DESC, Id DESC
+          LIMIT 20
+      ) AS keep_rows
+  );";
+
+            await using (var trimCommand = new MySqlCommand(trimSql, connection, transaction))
+            {
+                trimCommand.Parameters.AddWithValue("@UserId", userId);
+                await trimCommand.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 
     public async Task<NotificationDto> ShareMediaAsync(ShareMediaCommand command, CancellationToken cancellationToken = default)

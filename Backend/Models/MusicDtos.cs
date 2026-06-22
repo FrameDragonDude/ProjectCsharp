@@ -20,6 +20,20 @@ public sealed record AlbumDto(
     string? ArtistName,
     string ReleaseDate);
 
+public sealed record ArtistSummaryDto(
+    string Id,
+    string Name,
+    string? Bio,
+    string? AvatarUrl,
+    int AlbumCount,
+    int TrackCount,
+    string? CoverImageUrl);
+
+public sealed record ArtistDetailDto(
+    ArtistSummaryDto Artist,
+    IReadOnlyList<AlbumDto> Albums,
+    IReadOnlyList<MediaItemDto> Songs);
+
 public sealed record PlaylistDto(
     string Id,
     string Name,

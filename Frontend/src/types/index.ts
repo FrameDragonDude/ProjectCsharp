@@ -15,6 +15,12 @@ export interface Artist {
 	avatarUrl?: string | null;
 }
 
+export interface ArtistSummary extends Artist {
+	albumCount: number;
+	trackCount: number;
+	coverImageUrl?: string | null;
+}
+
 export interface Album {
 	id: string;
 	title: string;
@@ -53,11 +59,24 @@ export interface LibrarySummary {
 	playlists: Playlist[];
 }
 
+export interface ArtistDetail {
+	artist: ArtistSummary;
+	albums: Album[];
+	songs: MediaItem[];
+}
+
+export interface PlayHistory {
+	id: string;
+	mediaItemId: string;
+	mediaTitle?: string | null;
+	playedAt: string;
+}
+
 export interface SearchResult {
 	id: string;
 	title: string;
 	subtitle: string;
-	type: 'Song' | 'Album';
+	type: 'Song' | 'Video' | 'Album' | 'Playlist';
 	mediaType?: MediaType;
 	albumId?: string | null;
 	filePath?: string;
