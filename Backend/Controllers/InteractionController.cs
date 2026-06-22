@@ -1,4 +1,4 @@
-using Backend.Data;
+﻿using Backend.Data;
 using Backend.Domain.Entities;
 using Backend.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -15,10 +15,10 @@ namespace Backend.Controllers;
 public class InteractionController(TuneVaultDbContext dbContext, IMusicCatalogRepository repository) : ControllerBase
 {
     [HttpPost("favorite/{mediaItemId}")]
-    public async Task<IActionResult> ToggleFavorite(string mediaItemId)
+    public async Task<IActionResult> ToggleFavorite(int mediaItemId)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null) return Unauthorized();
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
 
         var existing = await dbContext.Favorites
             .FirstOrDefaultAsync(f => f.UserId == userId && f.MediaItemId == mediaItemId);
@@ -40,8 +40,8 @@ public class InteractionController(TuneVaultDbContext dbContext, IMusicCatalogRe
     [HttpGet("favorites")]
     public async Task<ActionResult<IEnumerable<MediaItemDto>>> GetFavorites()
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null) return Unauthorized();
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
 
         var favIds = await dbContext.Favorites
             .Where(f => f.UserId == userId)
@@ -52,7 +52,7 @@ public class InteractionController(TuneVaultDbContext dbContext, IMusicCatalogRe
         var items = new List<MediaItemDto>();
         foreach (var id in favIds)
         {
-            var item = await repository.GetMediaItemByIdAsync(id);
+            var item = await repository.GetMediaItemByIdAsync(id.ToString());
             if (item != null) items.Add(item);
         }
 
@@ -60,10 +60,10 @@ public class InteractionController(TuneVaultDbContext dbContext, IMusicCatalogRe
     }
 
     [HttpPost("history/{mediaItemId}")]
-    public async Task<IActionResult> RecordPlayHistory(string mediaItemId)
+    public async Task<IActionResult> RecordPlayHistory(int mediaItemId)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null) return Unauthorized();
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
 
         var history = new PlayHistory
         {
@@ -81,8 +81,8 @@ public class InteractionController(TuneVaultDbContext dbContext, IMusicCatalogRe
     [HttpGet("history")]
     public async Task<ActionResult<IEnumerable<MediaItemDto>>> GetPlayHistory()
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null) return Unauthorized();
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
 
         var historyIds = await dbContext.PlayHistories
             .Where(h => h.UserId == userId)
@@ -97,10 +97,12 @@ public class InteractionController(TuneVaultDbContext dbContext, IMusicCatalogRe
         var items = new List<MediaItemDto>();
         foreach (var id in historyIds)
         {
-            var item = await repository.GetMediaItemByIdAsync(id);
+            var item = await repository.GetMediaItemByIdAsync(id.ToString());
             if (item != null) items.Add(item);
         }
 
         return Ok(items);
     }
 }
+
+

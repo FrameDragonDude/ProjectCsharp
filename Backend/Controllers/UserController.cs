@@ -1,4 +1,4 @@
-using Backend.Models;
+﻿using Backend.Models;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,13 +18,13 @@ namespace Backend.Controllers
         [HttpGet("profile")]
         public async Task<IActionResult> GetProfile()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null) return Unauthorized();
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
 
             var query = new GetProfileQuery(userId);
             var profile = await _mediator.Send(query);
 
-            if (profile == null) return NotFound("Không tìm thấy thông tin hồ sơ.");
+            if (profile == null) return NotFound("KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin há»“ sÆ¡.");
             
             return Ok(profile);
         }
@@ -32,13 +32,13 @@ namespace Backend.Controllers
         [HttpPut("profile")]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null) return Unauthorized();
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
 
             var command = new UpdateProfileCommand(userId, request.FullName, request.Bio, request.AvatarUrl);
             var success = await _mediator.Send(command);
             
-            return success ? Ok("Cập nhật thành công") : BadRequest("Lỗi khi cập nhật");
+            return success ? Ok("Cáº­p nháº­t thÃ nh cÃ´ng") : BadRequest("Lá»—i khi cáº­p nháº­t");
         }
     }
     public record UpdateProfileRequest(string FullName, string Bio, string AvatarUrl);

@@ -1,4 +1,4 @@
-using Backend.Data;
+﻿using Backend.Data;
 using Backend.Hubs;
 using Backend.Services;
 using Backend.Models;
@@ -19,7 +19,7 @@ public sealed class SocialController(
         [FromBody] RecordPlayHistoryCommand command,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(command.MediaItemId))
+        if (command.MediaItemId <= 0)
         {
             return BadRequest("MediaItemId is required.");
         }
@@ -33,18 +33,18 @@ public sealed class SocialController(
         [FromBody] ShareMediaCommand command,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(command.SenderUserId))
+        if (command.SenderUserId <= 0)
         {
             return BadRequest("SenderUserId is required.");
         }
 
-        if (string.IsNullOrWhiteSpace(command.ReceiverUserId))
+        if (command.ReceiverUserId <= 0)
         {
             return BadRequest("ReceiverUserId is required.");
         }
 
-        var hasMediaItem = !string.IsNullOrWhiteSpace(command.MediaItemId);
-        var hasPlaylist = !string.IsNullOrWhiteSpace(command.PlaylistId);
+        var hasMediaItem = command.MediaItemId.HasValue;
+        var hasPlaylist = command.PlaylistId.HasValue;
 
         if (hasMediaItem == hasPlaylist)
         {
@@ -62,18 +62,18 @@ public sealed class SocialController(
     
     [HttpGet("recommendations/ai")]
     public async Task<ActionResult<IReadOnlyList<SongRecommendationDto>>> GetAiRecommendations(
-        [FromQuery] string userId,
+        [FromQuery] int userId,
         [FromQuery] int count = 5,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(userId))
+        if (userId <= 0)
         {
             return BadRequest("UserId is required.");
         }
 
         try
         {
-            var recommendations = await recommendationService.RecommendSongsAsync(userId, count, cancellationToken);
+            var recommendations = await recommendationService.RecommendSongsAsync(userId.ToString(), count, cancellationToken);
             return Ok(recommendations);
         }
         catch (InvalidOperationException ex) when (ex.Message.Contains("Claude API key", StringComparison.OrdinalIgnoreCase))
@@ -82,36 +82,37 @@ public sealed class SocialController(
         }
     }
 
-    [HttpGet("notifications")]
+    [HttpGet("social/notifications")]
     public async Task<ActionResult<IReadOnlyList<NotificationDto>>> GetNotifications(
-        [FromQuery] string userId, CancellationToken cancellationToken)
+        [FromQuery] int userId, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(userId)) return BadRequest("UserId is required ");
+        if (userId <= 0) return BadRequest("UserId is required ");
         {
-            return Ok(await repository.GetNotificationsAsync(userId, cancellationToken));
+            return Ok(await repository.GetNotificationsAsync(userId.ToString(), cancellationToken));
         }
     }
 
     [HttpPatch("notifications/{id}/read")]
-    public async Task<ActionResult> MarAsRead(string id, CancellationToken cancellationToken)
+    public async Task<ActionResult> MarAsRead(int id, CancellationToken cancellationToken)
     {
-        await repository.MarkNotificationAsReadAsync(id, cancellationToken);
+        await repository.MarkNotificationAsReadAsync(id.ToString(), cancellationToken);
         return NoContent();
     }
 
     [HttpPatch("notifications/read-all")]
-    public async Task<ActionResult> MarkAllAsRead([FromQuery] string userId, CancellationToken cancellationToken)
+    public async Task<ActionResult> MarkAllAsRead([FromQuery] int userId, CancellationToken cancellationToken)
     {
-        if(string.IsNullOrWhiteSpace(userId)) return BadRequest("UserId is required");
-        await repository.MarkAllNotificationsAsReadAsync(userId, cancellationToken);
+        if(userId <= 0) return BadRequest("UserId is required");
+        await repository.MarkAllNotificationsAsReadAsync(userId.ToString(), cancellationToken);
         return NoContent();
     }
 
     [HttpGet("play-histories/{userId}/recent")]
     public async Task<ActionResult<IReadOnlyList<PlayHistoryDto>>> GetRecentPlayHistories(
-        string userId, CancellationToken cancellationToken)
+        int userId, CancellationToken cancellationToken)
     {
-        return Ok(await repository.GetRecentPlayHistoriesAsync(userId, 20, cancellationToken));
+        return Ok(await repository.GetRecentPlayHistoriesAsync(userId.ToString(), 20, cancellationToken));
     }
 
 }
+

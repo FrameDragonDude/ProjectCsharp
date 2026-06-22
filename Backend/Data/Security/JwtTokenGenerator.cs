@@ -1,4 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Backend.Models;
@@ -20,12 +20,12 @@ namespace Backend.Data.Security
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var secret = _config["JwtSettings:Secret"] 
-             ?? throw new InvalidOperationException("Lỗi: Chưa cấu hình JwtSettings:Secret trong file appsettings.json!");
+             ?? throw new InvalidOperationException("Lá»—i: ChÆ°a cáº¥u hÃ¬nh JwtSettings:Secret trong file appsettings.json!");
             var key = Encoding.UTF8.GetBytes(secret);
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[] {
-                    new Claim(ClaimTypes.NameIdentifier, user.Id),
+                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                     new Claim(ClaimTypes.Name, user.Username),
                     new Claim(ClaimTypes.Email, user.Email)
                 }),

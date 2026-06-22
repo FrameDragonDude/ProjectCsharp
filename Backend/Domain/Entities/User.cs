@@ -7,7 +7,7 @@ namespace Backend.Domain.Entities;
 public class User
 {
     [Key]
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public int Id { get; set; } 
 
     [Required]
     [MaxLength(100)]

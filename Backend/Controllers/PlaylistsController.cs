@@ -1,4 +1,4 @@
-using Backend.Domain.Entities;
+﻿using Backend.Domain.Entities;
 using Backend.Infrastructure.Data;
 using Backend.Models.DTOs;
 using Microsoft.AspNetCore.Mvc;
@@ -19,7 +19,7 @@ public class PlaylistsController : ControllerBase
 
     // GET: api/playlists/user/{userId}
     [HttpGet("user/{userId}")]
-    public async Task<IActionResult> GetUserPlaylists(string userId)
+    public async Task<IActionResult> GetUserPlaylists(int userId)
     {
         var playlists = await _context.Playlists
             .Where(p => p.CreatedByUserId == userId)
@@ -35,7 +35,7 @@ public class PlaylistsController : ControllerBase
     {
         var playlist = new Playlist
         {
-            Id = Guid.NewGuid().ToString(),
+
             Name = dto.Name,
             Description = dto.Description,
             IsPublic = dto.IsPublic,
@@ -73,7 +73,7 @@ public class PlaylistsController : ControllerBase
 
     // DELETE: api/playlists/remove-track
     [HttpDelete("remove-track")]
-    public async Task<IActionResult> RemoveTrackFromPlaylist([FromQuery] string playlistId, [FromQuery] string mediaItemId)
+    public async Task<IActionResult> RemoveTrackFromPlaylist([FromQuery] int playlistId, [FromQuery] int mediaItemId)
     {
         var pt = await _context.PlaylistTracks
             .FirstOrDefaultAsync(x => x.PlaylistId == playlistId && x.MediaItemId == mediaItemId);
@@ -86,3 +86,4 @@ public class PlaylistsController : ControllerBase
         return NoContent();
     }
 }
+

@@ -20,7 +20,8 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.CustomSchemaIds(type => type.FullName);
+    c.CustomSchemaIds(type => type.FullName ?? type.Name);
+    c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "Nhap token theo cu phap: Bearer {token}",

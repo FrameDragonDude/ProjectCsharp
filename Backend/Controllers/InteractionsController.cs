@@ -1,4 +1,4 @@
-using Backend.Domain.Entities;
+﻿using Backend.Domain.Entities;
 using Backend.Infrastructure.Data;
 using Backend.Models.DTOs;
 using Microsoft.AspNetCore.Mvc;
@@ -39,7 +39,7 @@ public class InteractionsController : ControllerBase
     }
 
     [HttpDelete("favorites")]
-    public async Task<IActionResult> RemoveFromFavorites([FromQuery] string userId, [FromQuery] string mediaItemId)
+    public async Task<IActionResult> RemoveFromFavorites([FromQuery] int userId, [FromQuery] int mediaItemId)
     {
         var fav = await _context.Favorites
             .FirstOrDefaultAsync(f => f.UserId == userId && f.MediaItemId == mediaItemId);
@@ -57,7 +57,7 @@ public class InteractionsController : ControllerBase
     {
         var history = new PlayHistory
         {
-            Id = Guid.NewGuid().ToString(),
+
             UserId = dto.UserId,
             MediaItemId = dto.MediaItemId,
             PlayedAt = DateTime.UtcNow
@@ -90,3 +90,4 @@ public class InteractionsController : ControllerBase
         return Ok();
     }
 }
+

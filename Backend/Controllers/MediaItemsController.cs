@@ -1,4 +1,4 @@
-using Backend.Domain.Entities;
+﻿using Backend.Domain.Entities;
 using Backend.Infrastructure.Data;
 using Backend.Models.DTOs;
 using Microsoft.AspNetCore.Mvc;
@@ -57,7 +57,7 @@ public class MediaItemsController : ControllerBase
 
     // GET: api/mediaitems/{id}
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetMediaItem(string id)
+    public async Task<IActionResult> GetMediaItem(int id)
     {
         var item = await _context.MediaItems
             .Include(m => m.Album)
@@ -76,10 +76,10 @@ public class MediaItemsController : ControllerBase
         if (dto.File == null || dto.File.Length == 0)
             return BadRequest("File is required.");
 
-        var id = Guid.NewGuid().ToString();
+        var fileId = Guid.NewGuid().ToString();
         var extension = Path.GetExtension(dto.File.FileName);
         var subFolder = dto.MediaType.ToLower() == "video" ? "video" : "audio";
-        var fileName = $"{id}{extension}";
+        var fileName = $"{fileId}{extension}";
         var relativePath = $"/storage/{subFolder}/{fileName}";
         var absolutePath = Path.Combine(_storagePath, subFolder, fileName);
 
@@ -93,7 +93,7 @@ public class MediaItemsController : ControllerBase
 
         var mediaItem = new MediaItem
         {
-            Id = id,
+
             Title = dto.Title,
             MediaType = dto.MediaType,
             FilePath = relativePath,
@@ -111,7 +111,7 @@ public class MediaItemsController : ControllerBase
 
     // DELETE: api/mediaitems/{id}
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteMediaItem(string id)
+    public async Task<IActionResult> DeleteMediaItem(int id)
     {
         var item = await _context.MediaItems.FindAsync(id);
         if (item == null) return NotFound();
@@ -131,7 +131,7 @@ public class MediaItemsController : ControllerBase
 
     // GET: api/mediaitems/stream/{id}
     [HttpGet("stream/{id}")]
-    public async Task<IActionResult> StreamMedia(string id)
+    public async Task<IActionResult> StreamMedia(int id)
     {
         var item = await _context.MediaItems.FindAsync(id);
         if (item == null) return NotFound();
@@ -146,3 +146,4 @@ public class MediaItemsController : ControllerBase
         return File(fileStream, contentType, enableRangeProcessing: true);
     }
 }
+

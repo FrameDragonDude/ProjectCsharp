@@ -1,4 +1,4 @@
-using Backend.Models;
+﻿using Backend.Models;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,19 +15,19 @@ namespace Backend.Controllers
         public FollowController(IMediator mediator) => _mediator = mediator;
 
         [HttpPost("{targetId}")]
-        public async Task<IActionResult> ToggleFollow(string targetId, [FromQuery] string type = "User")
+        public async Task<IActionResult> ToggleFollow(int targetId, [FromQuery] string type = "User")
         {
             if (type != "User" && type != "Artist") 
             {
-                return BadRequest("Loại đối tượng (type) chỉ được phép là 'User' hoặc 'Artist'.");
+                return BadRequest("Loáº¡i Ä‘á»‘i tÆ°á»£ng (type) chá»‰ Ä‘Æ°á»£c phÃ©p lÃ  'User' hoáº·c 'Artist'.");
             }
 
-            var myUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (myUserId == null) return Unauthorized();
+            var myUserIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(myUserIdValue, out var myUserId)) return Unauthorized();
 
             if (type == "User" && myUserId == targetId) 
             {
-                return BadRequest("Bạn không thể tự theo dõi chính mình.");
+                return BadRequest("Báº¡n khÃ´ng thá»ƒ tá»± theo dÃµi chÃ­nh mÃ¬nh.");
             }
 
             var command = new ToggleFollowCommand(myUserId, targetId, type);
