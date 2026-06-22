@@ -1,4 +1,4 @@
-﻿using Backend.Models;
+using Backend.Models;
 using System.Globalization;
 using System.Text;
 using MySqlConnector;
@@ -182,7 +182,7 @@ ORDER BY m.CreatedAt DESC;";
                 results.Add(new SearchResultDto(
                     reader.GetInt32(reader.GetOrdinal("Id")),
                     title,
-                    $"{artistName} â€¢ {duration}",
+                    $"{artistName} • {duration}",
                     "Song",
                     reader.GetString("MediaType"),
                     reader.IsDBNull(reader.GetOrdinal("AlbumId")) ? null : reader.GetInt32(reader.GetOrdinal("AlbumId")),
@@ -208,7 +208,7 @@ ORDER BY a.ReleaseDate DESC;";
                 results.Add(new SearchResultDto(
                     reader.GetInt32(reader.GetOrdinal("Id")),
                     reader.GetString("Title"),
-                    $"{artistName} â€¢ Album",
+                    $"{artistName} • Album",
                     "Album",
                     null,
                     null,
@@ -239,7 +239,7 @@ ORDER BY m.CreatedAt DESC;";
                 results.Add(new SearchResultDto(
                     reader.GetInt32(reader.GetOrdinal("Id")),
                     reader.GetString("Title"),
-                    $"{artistName} â€¢ {duration}",
+                    $"{artistName} • {duration}",
                     "Video",
                     reader.GetString("MediaType"),
                     reader.IsDBNull(reader.GetOrdinal("AlbumId")) ? null : reader.GetInt32(reader.GetOrdinal("AlbumId")),
@@ -274,7 +274,7 @@ ORDER BY p.CreatedAt DESC;";
                 results.Add(new SearchResultDto(
                     reader.GetInt32(reader.GetOrdinal("Id")),
                     reader.GetString("Name"),
-                    $"{reader.GetString("TrackCount")} bÃ i hÃ¡t",
+                    $"{reader.GetString("TrackCount")} bài hát",
                     "Playlist",
                     null,
                     null,
@@ -355,7 +355,6 @@ VALUES (@PlaylistId, @MediaItemId);";
 
     public async Task<AlbumDto> CreateAlbumAsync(CreateAlbumRequest request, CancellationToken cancellationToken = default)
     {
-        var albumId = 0;
         var title = request.Title?.Trim() ?? string.Empty;
         var artistName = request.ArtistName?.Trim() ?? "TuneVault";
         var cover = string.IsNullOrWhiteSpace(request.CoverImageUrl) ? null : request.CoverImageUrl.Trim();
@@ -371,49 +370,58 @@ VALUES (@PlaylistId, @MediaItemId);";
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
         try
         {
-            // find artist
-            int artistId = 0;
-            const string findArtistSql = @"SELECT Id FROM Artists WHERE Name = @Name LIMIT 1;";
+            var artistId = 0;
+            var resolvedArtistName = artistName;
+            const string findArtistSql = @"
+SELECT Id, Name FROM Artists
+WHERE LOWER(TRIM(Name)) = LOWER(TRIM(@Name))
+LIMIT 1;";
             await using (var findCmd = new MySqlCommand(findArtistSql, connection, transaction))
             {
                 findCmd.Parameters.AddWithValue("@Name", artistName);
-                var res = await findCmd.ExecuteScalarAsync(cancellationToken);
-                if (res != null)
+                await using var reader = await findCmd.ExecuteReaderAsync(cancellationToken);
+                if (await reader.ReadAsync(cancellationToken))
                 {
-                    artistId = Convert.ToInt32(res, CultureInfo.InvariantCulture);
+                    artistId = reader.GetInt32(reader.GetOrdinal("Id"));
+                    resolvedArtistName = reader.GetString("Name");
                 }
             }
 
             if (artistId <= 0)
             {
-                artistId = (int)0;
-                const string insertArtist = @"INSERT INTO Artists (Name) VALUES (@Name);";
-                await using (var insertCmd = new MySqlCommand(insertArtist, connection, transaction))
+                const string fallbackArtistSql = @"SELECT Id, Name FROM Artists ORDER BY Id LIMIT 1;";
+                await using var fallbackCmd = new MySqlCommand(fallbackArtistSql, connection, transaction);
+                await using var reader = await fallbackCmd.ExecuteReaderAsync(cancellationToken);
+                if (await reader.ReadAsync(cancellationToken))
                 {
-
-                    insertCmd.Parameters.AddWithValue("@Name", artistName);
-                    await insertCmd.ExecuteNonQueryAsync(cancellationToken);
+                    artistId = reader.GetInt32(reader.GetOrdinal("Id"));
+                    resolvedArtistName = reader.GetString("Name");
                 }
             }
 
-            const string insertAlbum = @"
-INSERT INTO Albums (Id, Title, CoverImageUrl, ArtistId, ReleaseDate)
-VALUES (@Id, @Title, @CoverImageUrl, @ArtistId, @ReleaseDate);
-";
+            if (artistId <= 0)
+            {
+                throw new InvalidOperationException("Khong tim thay nghe si de tao album.");
+            }
 
+            const string insertAlbum = @"
+INSERT INTO Albums (Title, CoverImageUrl, ArtistId, ReleaseDate)
+VALUES (@Title, @CoverImageUrl, @ArtistId, @ReleaseDate);";
+
+            var albumId = 0;
             await using (var cmd = new MySqlCommand(insertAlbum, connection, transaction))
             {
-                cmd.Parameters.AddWithValue("@Id", albumId);
                 cmd.Parameters.AddWithValue("@Title", title);
                 cmd.Parameters.AddWithValue("@CoverImageUrl", (object?)cover ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@ArtistId", artistId);
                 cmd.Parameters.AddWithValue("@ReleaseDate", releaseDate);
                 await cmd.ExecuteNonQueryAsync(cancellationToken);
+                albumId = Convert.ToInt32(cmd.LastInsertedId, CultureInfo.InvariantCulture);
             }
 
             await transaction.CommitAsync(cancellationToken);
 
-            return new AlbumDto(albumId, title, cover, artistId, artistName, releaseDate.ToString("yyyy-MM-dd"));
+            return new AlbumDto(albumId, title, cover, artistId, resolvedArtistName, releaseDate.ToString("yyyy-MM-dd"));
         }
         catch
         {
@@ -421,7 +429,6 @@ VALUES (@Id, @Title, @CoverImageUrl, @ArtistId, @ReleaseDate);
             throw;
         }
     }
-
     public async Task<AlbumDto?> UpdateAlbumCoverAsync(string albumId, string? coverImageUrl, CancellationToken cancellationToken = default)
     {
         await using var connection = new MySqlConnection(ConnectionString);
