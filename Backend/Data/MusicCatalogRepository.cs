@@ -59,7 +59,7 @@ SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistI
     a.Title AS AlbumTitle, art.Name AS ArtistName, COALESCE(m.CoverImageUrl, a.CoverImageUrl) AS CoverImageUrl
 FROM MediaItems m
 LEFT JOIN Albums a ON a.Id = m.AlbumId
-LEFT JOIN Artists art ON art.Id = a.ArtistId
+LEFT JOIN Artists art ON art.Id = m.ArtistId
 WHERE m.Id = @Id
 LIMIT 1;";
 
@@ -127,7 +127,7 @@ SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistI
 FROM PlaylistTracks pt
 INNER JOIN MediaItems m ON m.Id = pt.MediaItemId
 LEFT JOIN Albums a ON a.Id = m.AlbumId
-LEFT JOIN Artists art ON art.Id = a.ArtistId
+LEFT JOIN Artists art ON art.Id = m.ArtistId
 WHERE pt.PlaylistId = @PlaylistId
 ORDER BY pt.AddedAt DESC;";
 
@@ -520,15 +520,15 @@ UPDATE MediaItems SET AlbumId = @AlbumId WHERE Id = @Id;";
     }
 
     private static async Task<IReadOnlyList<MediaItemDto>> LoadMediaItemsAsync(MySqlConnection connection, string mediaType, CancellationToken cancellationToken)
-    {
-        const string sql = @"
-SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId,
-       a.Title AS AlbumTitle, art.Name AS ArtistName, COALESCE(m.CoverImageUrl, a.CoverImageUrl) AS CoverImageUrl
-FROM MediaItems m
-LEFT JOIN Albums a ON a.Id = m.AlbumId
-LEFT JOIN Artists art ON art.Id = a.ArtistId
-WHERE m.MediaType = @MediaType
-ORDER BY m.CreatedAt DESC;";
+        {
+            const string sql = @"
+    SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId,
+           a.Title AS AlbumTitle, art.Name AS ArtistName, COALESCE(m.CoverImageUrl, a.CoverImageUrl) AS CoverImageUrl
+    FROM MediaItems m
+    LEFT JOIN Albums a ON a.Id = m.AlbumId
+    LEFT JOIN Artists art ON art.Id = m.ArtistId
+    WHERE m.MediaType = @MediaType
+    ORDER BY m.CreatedAt DESC;";
 
         await using var command = new MySqlCommand(sql, connection);
         command.Parameters.AddWithValue("@MediaType", mediaType);
@@ -907,15 +907,27 @@ LIMIT @Limit;";
         await connection.OpenAsync(cancellationToken);
 
         const string sql = @"
-        SELECT ph.Id, ph.MediaItemId, m.Title AS MediaTitle, art.Name AS ArtistName, 
-               COALESCE(m.CoverImageUrl, a.CoverImageUrl) AS CoverImageUrl, ph.PlayedAt
-        FROM PlayHistories ph
-        INNER JOIN MediaItems m ON ph.MediaItemId = m.Id
-        LEFT JOIN Albums a ON m.AlbumId = a.Id
-        LEFT JOIN Artists art ON m.ArtistId = art.Id
-        WHERE ph.UserId = @UserId
-        ORDER BY ph.PlayedAt DESC 
-        LIMIT @Limit;";
+    WITH RankedHistory AS (
+    SELECT
+        ph.Id,
+        ph.MediaItemId,
+        m.Title AS MediaTitle,
+        art.Name AS ArtistName,
+        COALESCE(m.CoverImageUrl, a.CoverImageUrl) AS CoverImageUrl,
+        ph.PlayedAt,
+        ROW_NUMBER() OVER(PARTITION BY ph.MediaItemId ORDER BY ph.PlayedAt DESC) as rn
+    FROM PlayHistories ph
+    INNER JOIN MediaItems m ON ph.MediaItemId = m.Id
+    LEFT JOIN Albums a ON m.AlbumId = a.Id
+    LEFT JOIN Artists art ON m.ArtistId = art.Id
+    WHERE ph.UserId = @UserId
+)
+SELECT Id, MediaItemId, MediaTitle, ArtistName, CoverImageUrl, PlayedAt
+FROM RankedHistory
+WHERE rn = 1
+ORDER BY PlayedAt DESC
+LIMIT @Limit;
+";
         
         await using var command = new MySqlCommand(sql,connection);
         command.Parameters.AddWithValue("@UserId", int.Parse(userId, System.Globalization.CultureInfo.InvariantCulture));
