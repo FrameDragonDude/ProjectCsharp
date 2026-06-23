@@ -123,7 +123,7 @@ ORDER BY al.ReleaseDate DESC, al.Title ASC;";
         }
 
         const string songsSql = @"
-SELECT mi.Id, mi.Title, mi.FilePath, mi.Duration, mi.MediaType, ar.UserId AS OwnerId, mi.AlbumId,
+SELECT mi.Id, mi.Title, mi.FilePath, mi.Duration, mi.MediaType, ar.UserId AS OwnerId, mi.AlbumId, mi.ArtistId,
        al.Title AS AlbumTitle, ar.Name AS ArtistName, COALESCE(mi.CoverImageUrl, al.CoverImageUrl, ar.AvatarUrl) AS CoverImageUrl
 FROM MediaItems mi
 INNER JOIN Artists ar ON ar.Id = mi.ArtistId
