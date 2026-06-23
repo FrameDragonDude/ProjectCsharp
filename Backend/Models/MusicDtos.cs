@@ -95,5 +95,7 @@ public sealed record PlayHistoryDto(
     int Id,
     int MediaItemId,
     string? MediaTitle,
+    string? ArtistName,
+    string? CoverImageUrl,
     DateTime PlayedAt
 );

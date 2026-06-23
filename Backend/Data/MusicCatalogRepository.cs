@@ -907,12 +907,14 @@ LIMIT @Limit;";
         await connection.OpenAsync(cancellationToken);
 
         const string sql = @"
-        SELECT MAX(ph.Id) AS Id, ph.MediaItemId, m.Title AS MediaTitle, MAX(ph.PlayedAt) AS PlayedAt
+        SELECT ph.Id, ph.MediaItemId, m.Title AS MediaTitle, art.Name AS ArtistName, 
+               COALESCE(m.CoverImageUrl, a.CoverImageUrl) AS CoverImageUrl, ph.PlayedAt
         FROM PlayHistories ph
         INNER JOIN MediaItems m ON ph.MediaItemId = m.Id
+        LEFT JOIN Albums a ON m.AlbumId = a.Id
+        LEFT JOIN Artists art ON m.ArtistId = art.Id
         WHERE ph.UserId = @UserId
-        GROUP BY ph.MediaItemId, m.Title
-        ORDER BY PlayedAt DESC 
+        ORDER BY ph.PlayedAt DESC 
         LIMIT @Limit;";
         
         await using var command = new MySqlCommand(sql,connection);
@@ -927,6 +929,8 @@ LIMIT @Limit;";
                 reader.GetInt32(reader.GetOrdinal("Id")),
                 reader.GetInt32(reader.GetOrdinal("MediaItemId")),
                 reader.IsDBNull(reader.GetOrdinal("MediaTitle")) ? null : reader.GetString("MediaTitle"),
+                reader.IsDBNull(reader.GetOrdinal("ArtistName")) ? null : reader.GetString("ArtistName"),
+                reader.IsDBNull(reader.GetOrdinal("CoverImageUrl")) ? null : reader.GetString("CoverImageUrl"),
                 reader.GetDateTime("PlayedAt")
             ));
         }

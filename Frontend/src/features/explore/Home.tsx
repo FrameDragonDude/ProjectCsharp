@@ -20,7 +20,7 @@ export default function Home() {
   const [recentSongs, setRecentSongs] = useState<PlayHistory[]>([]);
   const playTrack = usePlayerStore((state) => state.playTrack);
   const openVideo = usePlayerStore((state) => state.openVideo);
-  const currentUser = useAuthStore((state) => state.user?.id ?? '22222222-2222-2222-2222-222200000002');
+  const currentUser = useAuthStore((state) => state.user?.id ?? 2);
 
   useEffect(() => {
     let mounted = true;
@@ -146,9 +146,8 @@ export default function Home() {
         ) : (
           <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
             {recentSongs.map((song) => {
-              const matchingSong = songs.find((s) => s.id === song.mediaItemId);
-              const coverUrl = matchingSong?.coverImageUrl
-                ? resolveAssetUrl(matchingSong.coverImageUrl)
+              const coverUrl = song.coverImageUrl
+                ? resolveAssetUrl(song.coverImageUrl)
                 : resolveAssetUrl('default-cover.svg');
 
               return (
@@ -156,6 +155,7 @@ export default function Home() {
                   key={song.id}
                   type="button"
                   onClick={() => {
+                    const matchingSong = songs.find((s) => s.id === song.mediaItemId);
                     if (matchingSong) {
                       playTrack(matchingSong, songs);
                     }
@@ -171,7 +171,7 @@ export default function Home() {
                     {song.mediaTitle || `Bài hát ${song.mediaItemId.substring(0, 4)}`}
                   </h3>
                   <p className="text-sm text-neutral-400 truncate">
-                    {matchingSong?.artistName ?? 'TuneVault'}
+                    {song.artistName ?? 'TuneVault'}
                   </p>
                 </button>
               );

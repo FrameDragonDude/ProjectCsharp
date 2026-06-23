@@ -3,7 +3,7 @@ import type { MediaItem } from '../types';
 import { recordPlayHistory as recordPlayHistoryApi } from '../services/api/tuneVaultApi';
 import { useAuthStore } from './useAuthStore';
 
-const fallbackUserId = '22222222-2222-2222-2222-222200000002';
+const fallbackUserId = 2;
 
 const recordPlayHistory = (mediaItemId: string) => {
 	const userId = useAuthStore.getState().user?.id ?? fallbackUserId;

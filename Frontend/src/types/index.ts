@@ -1,7 +1,7 @@
 export type MediaType = 'Audio' | 'Video';
 
 export interface User {
-	id: string;
+	id: number;
 	username: string;
 	fullName: string;
 	email?: string;
@@ -69,6 +69,8 @@ export interface PlayHistory {
 	id: string;
 	mediaItemId: string;
 	mediaTitle?: string | null;
+	artistName?: string | null;
+	coverImageUrl?: string | null;
 	playedAt: string;
 }
 
