@@ -189,6 +189,7 @@ export default function ArtistDetailPage() {
                   <p className="text-sm text-neutral-400 truncate">
                     {song.albumTitle ?? 'Không có album'} • {song.duration}
                   </p>
+                  {song.description && <p className="text-sm text-neutral-500 truncate">{song.description}</p>}
                 </div>
                 <button
                   onClick={() => playTrack(song, songs)}

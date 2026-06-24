@@ -21,6 +21,7 @@ interface PlayerState {
 	volume: number;
 	progress: number;
 	duration: number;
+	songForDetail: MediaItem | null;
 	playTrack: (track: MediaItem, queue?: MediaItem[]) => void;
 	playQueue: (tracks: MediaItem[], startIndex?: number) => void;
 	openVideo: (track: MediaItem) => void;
@@ -44,10 +45,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 	volume: 0.8,
 	progress: 0,
 	duration: 0,
+	songForDetail: null,
 	playTrack: (track, queue) => {
 		recordPlayHistory(track.id);
 		set({
 			currentTrack: track,
+			songForDetail: track,
 			queue: queue ?? [track],
 			queueIndex: queue?.findIndex((item) => item.id === track.id) ?? 0,
 			isPlaying: true,

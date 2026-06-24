@@ -25,6 +25,7 @@ export interface Album {
 	id: string;
 	title: string;
 	coverImageUrl?: string | null;
+	description?: string | null;
 	artistId: string;
 	artistName?: string;
 	releaseDate: string;
@@ -34,6 +35,7 @@ export interface MediaItem {
 	id: string;
 	title: string;
 	filePath: string;
+	description?: string | null;
 	duration: string;
 	mediaType: MediaType;
 	ownerId: string;

@@ -123,7 +123,7 @@ ORDER BY al.ReleaseDate DESC, al.Title ASC;";
         }
 
         const string songsSql = @"
-SELECT mi.Id, mi.Title, mi.FilePath, mi.Duration, mi.MediaType, ar.UserId AS OwnerId, mi.AlbumId, mi.ArtistId,
+SELECT mi.Id, mi.Title, mi.FilePath, mi.Duration, mi.MediaType, mi.Description, mi.AlbumId, mi.ArtistId,
        al.Title AS AlbumTitle, ar.Name AS ArtistName, COALESCE(mi.CoverImageUrl, al.CoverImageUrl, ar.AvatarUrl) AS CoverImageUrl
 FROM MediaItems mi
 INNER JOIN Artists ar ON ar.Id = mi.ArtistId
@@ -142,9 +142,10 @@ ORDER BY mi.CreatedAt DESC, mi.Title ASC;";
                     reader.GetInt32(reader.GetOrdinal("Id")),
                     reader.GetString("Title"),
                     reader.GetString("FilePath"),
+                    reader.IsDBNull(reader.GetOrdinal("Description")) ? string.Empty : reader.GetString("Description"),
                     reader.GetString("Duration"),
                     reader.GetString("MediaType"),
-                    reader.GetInt32(reader.GetOrdinal("ArtistId")),
+                    reader.IsDBNull(reader.GetOrdinal("ArtistId")) ? null : reader.GetInt32(reader.GetOrdinal("ArtistId")),
                     reader.IsDBNull(reader.GetOrdinal("AlbumId")) ? null : (int?)reader.GetInt32(reader.GetOrdinal("AlbumId")),
                     reader.IsDBNull(reader.GetOrdinal("AlbumTitle")) ? string.Empty : reader.GetString("AlbumTitle"),
                     reader.GetString("ArtistName"),

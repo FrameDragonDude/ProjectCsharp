@@ -55,7 +55,7 @@ public sealed class MySqlMusicCatalogRepository(IConfiguration configuration) : 
         await connection.OpenAsync(cancellationToken);
 
         const string sql = @"
-SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId,
+SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId, m.Description,
     a.Title AS AlbumTitle, art.Name AS ArtistName, COALESCE(m.CoverImageUrl, a.CoverImageUrl) AS CoverImageUrl
 FROM MediaItems m
 LEFT JOIN Albums a ON a.Id = m.AlbumId
@@ -122,7 +122,7 @@ LIMIT 1;";
         await connection.OpenAsync(cancellationToken);
 
         const string sql = @"
-SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId,
+SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId, m.Description,
     a.Title AS AlbumTitle, art.Name AS ArtistName, COALESCE(m.CoverImageUrl, a.CoverImageUrl) AS CoverImageUrl
 FROM PlaylistTracks pt
 INNER JOIN MediaItems m ON m.Id = pt.MediaItemId
@@ -486,7 +486,7 @@ LIMIT 1;";
             }
 
             const string selectSql = @"
-        SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId,
+        SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId, m.Description,
                a.Title AS AlbumTitle, art.Name AS ArtistName, COALESCE(m.CoverImageUrl, a.CoverImageUrl) AS CoverImageUrl
         FROM MediaItems m
         LEFT JOIN Albums a ON a.Id = m.AlbumId
@@ -522,7 +522,7 @@ UPDATE MediaItems SET AlbumId = @AlbumId WHERE Id = @Id;";
     private static async Task<IReadOnlyList<MediaItemDto>> LoadMediaItemsAsync(MySqlConnection connection, string mediaType, CancellationToken cancellationToken)
         {
             const string sql = @"
-    SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId,
+    SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId, m.Description,
            a.Title AS AlbumTitle, art.Name AS ArtistName, COALESCE(m.CoverImageUrl, a.CoverImageUrl) AS CoverImageUrl
     FROM MediaItems m
     LEFT JOIN Albums a ON a.Id = m.AlbumId
@@ -612,9 +612,10 @@ ORDER BY p.CreatedAt DESC;";
             reader.GetInt32(reader.GetOrdinal("Id")),
             reader.GetString("Title"),
             reader.GetString("FilePath"),
+            reader.IsDBNull(reader.GetOrdinal("Description")) ? string.Empty : reader.GetString("Description"),
             reader.GetString("Duration"),
             reader.GetString("MediaType"),
-            reader.GetInt32(reader.GetOrdinal("ArtistId")),
+            reader.IsDBNull(reader.GetOrdinal("ArtistId")) ? null : reader.GetInt32(reader.GetOrdinal("ArtistId")),
             reader.IsDBNull(reader.GetOrdinal("AlbumId")) ? null : reader.GetInt32(reader.GetOrdinal("AlbumId")),
             reader.IsDBNull(reader.GetOrdinal("AlbumTitle")) ? null : reader.GetString("AlbumTitle"),
             reader.IsDBNull(reader.GetOrdinal("ArtistName")) ? null : reader.GetString("ArtistName"),
@@ -790,7 +791,7 @@ VALUES (@Id, @UserId, 'Share', @PayloadJson, 0, @CreatedAt);";
         var recentPlays = new List<MediaItemDto>();
 
         const string historySql = @"
-SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId,
+SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId, m.Description,
        a.Title AS AlbumTitle, art.Name AS ArtistName, a.CoverImageUrl
 FROM PlayHistories ph
 INNER JOIN MediaItems m ON m.Id = ph.MediaItemId
@@ -815,7 +816,7 @@ LIMIT @Limit;";
         var candidateItems = new List<MediaItemDto>();
 
         const string candidatesSql = @"
-SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId,
+SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId, m.Description,
        a.Title AS AlbumTitle, art.Name AS ArtistName, a.CoverImageUrl
 FROM MediaItems m
 LEFT JOIN Albums a ON a.Id = m.AlbumId

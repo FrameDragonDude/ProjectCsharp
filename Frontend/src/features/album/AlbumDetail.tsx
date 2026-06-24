@@ -80,6 +80,7 @@ export default function AlbumDetail() {
           <h1 className="text-3xl font-bold">{album.title}</h1>
           <p className="text-neutral-400 mt-1">{album.artistName}</p>
           <p className="text-neutral-500 mt-2">{album.releaseDate}</p>
+          {album.description && <p className="text-neutral-300 mt-2">{album.description}</p>}
         </div>
       </div>
 
@@ -159,6 +160,7 @@ export default function AlbumDetail() {
                   <div className="text-sm text-neutral-400">
                     {t.artistName ?? 'TuneVault'} • {t.duration}
                   </div>
+                  {t.description && <div className="text-sm text-neutral-500">{t.description}</div>}
                 </div>
                 <div className="flex items-center gap-2">
                   <button onClick={() => playTrack(t, tracks)} className="px-3 py-1 bg-white text-black rounded">
