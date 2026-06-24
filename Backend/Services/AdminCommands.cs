@@ -31,15 +31,13 @@ namespace Backend.Services
 
             var passwordHash = _passwordHasher.HashPassword(request.Password);
             
-            // Bắt đầu Transaction để đảm bảo an toàn cho cả 3 bảng
             await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
             try
             {
-                // 1. Lưu vào bảng Users (RoleId = 2 dành cho Artist)
                 const string insertUserSql = @"
                     INSERT INTO Users (Username, Email, PasswordHash, RoleId) 
                     VALUES (@Username, @Email, @PasswordHash, 2);
-                    SELECT LAST_INSERT_ID();"; // Lấy ID vừa tạo
+                    SELECT LAST_INSERT_ID();";
                     
                 await using var userCmd = new MySqlCommand(insertUserSql, connection, transaction);
                 userCmd.Parameters.AddWithValue("@Username", request.Username);
@@ -47,7 +45,6 @@ namespace Backend.Services
                 userCmd.Parameters.AddWithValue("@PasswordHash", passwordHash);
                 var userId = Convert.ToInt32(await userCmd.ExecuteScalarAsync(cancellationToken));
 
-                // 2. Lưu vào bảng UserProfiles
                 const string insertProfileSql = @"
                     INSERT INTO UserProfiles (UserId, FullName, Bio) 
                     VALUES (@UserId, @ArtistName, 'Hồ sơ nghệ sĩ mới');";
@@ -56,7 +53,6 @@ namespace Backend.Services
                 profileCmd.Parameters.AddWithValue("@ArtistName", request.ArtistName);
                 await profileCmd.ExecuteNonQueryAsync(cancellationToken);
 
-                // 3. Lưu vào bảng Artists (Bắt buộc phải có để up nhạc)
                 const string insertArtistSql = @"
                     INSERT INTO Artists (Name, UserId) 
                     VALUES (@ArtistName, @UserId);";
