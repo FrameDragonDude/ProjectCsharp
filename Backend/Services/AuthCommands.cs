@@ -1,19 +1,20 @@
 using Backend.Data.Security;
+using Backend.Domain.Entities;
 using MediatR;
 using MySqlConnector;
 using System.ComponentModel.DataAnnotations;
 
-namespace Backend.Models
+namespace Backend.Services
 {
     public sealed record RegisterCommand(
-        [Required(ErrorMessage = "TÍn dang nh?p khÙng du?c d? tr?ng")] string Username,
-        [Required(ErrorMessage = "Email khÙng du?c d? tr?ng")]
-        [EmailAddress(ErrorMessage = "Email khÙng d˙ng d?nh d?ng! Vui lÚng nh?p l?i.")] string Email,
-        [MinLength(6, ErrorMessage = "M?t kh?u ph?i cÛ Ìt nh?t 6 k˝ t?.")]
+        [Required(ErrorMessage = "Ten dang nhap khong duoc de trong")] string Username,
+        [Required(ErrorMessage = "Email khong duoc de trong")]
+        [EmailAddress(ErrorMessage = "Email khong dung dinh dang! Vui long nhap lai.")] string Email,
+        [MinLength(6, ErrorMessage = "Mat khau phai co it nhat 6 ky tu.")]
         [RegularExpression(@"^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_]).+$",
-            ErrorMessage = "M?t kh?u ph?i bao g?m Ìt nh?t 1 ch? c·i, 1 ch? s? v‡ 1 k˝ t? d?c bi?t.")]
+            ErrorMessage = "Mat khau phai bao gom it nhat 1 chu cai, 1 chu so va 1 ky tu dac biet.")]
         string Password,
-        [Required(ErrorMessage = "H? v‡ tÍn khÙng du?c d? tr?ng")] string FullName
+        [Required(ErrorMessage = "Ho va ten khong duoc de trong")] string FullName
     ) : IRequest<string>;
 
     public class RegisterCommandHandler : IRequestHandler<RegisterCommand, string>
@@ -41,7 +42,7 @@ namespace Backend.Models
                 checkCmd.Parameters.AddWithValue("@Email", request.Email);
                 checkCmd.Parameters.AddWithValue("@Username", request.Username);
                 var exists = await checkCmd.ExecuteScalarAsync(cancellationToken);
-                if (exists != null) throw new Exception("Username ho?c Email d„ du?c s? d?ng.");
+                if (exists != null) throw new Exception("Email ho·∫∑c t√™n ƒëƒÉng nh·∫≠p ƒë√£ t·ªìn t·∫°i. Vui l√≤ng ch·ªçn m·ªôt email ho·∫∑c t√™n ƒëƒÉng nh·∫≠p kh√°c.");
             }
 
             var passwordHash = _passwordHasher.HashPassword(request.Password);
@@ -67,7 +68,7 @@ VALUES (@Username, @Email, @PasswordHash, @RoleId);";
 
                 const string insertProfileSql = @"
 INSERT INTO UserProfiles (UserId, FullName, Bio)
-VALUES (@UserId, @FullName, 'Ch‡o m?ng d?n v?i TuneVault!');";
+VALUES (@UserId, @FullName, 'ChÔøΩo m?ng d?n v?i TuneVault!');";
 
                 await using (var profileCmd = new MySqlCommand(insertProfileSql, connection, transaction))
                 {
@@ -111,9 +112,10 @@ VALUES (@UserId, @FullName, 'Ch‡o m?ng d?n v?i TuneVault!');";
             await connection.OpenAsync(cancellationToken);
 
             const string sql = @"
-                SELECT Id, Username, Email, PasswordHash
-                FROM Users
-                WHERE Email = @EmailOrUsername OR Username = @EmailOrUsername
+                SELECT u.Id, u.Username, u.Email, u.PasswordHash, r.Name AS RoleName 
+                FROM Users u
+                INNER JOIN Roles r ON u.RoleId = r.Id
+                WHERE u.Email = @EmailOrUsername OR u.Username = @EmailOrUsername 
                 LIMIT 1;";
 
             await using var command = new MySqlCommand(sql, connection);
@@ -122,27 +124,29 @@ VALUES (@UserId, @FullName, 'Ch‡o m?ng d?n v?i TuneVault!');";
             await using var reader = await command.ExecuteReaderAsync(cancellationToken);
             if (!await reader.ReadAsync(cancellationToken))
             {
-                throw new Exception("T‡i kho?n ho?c m?t kh?u khÙng chÌnh x·c.");
+                throw new Exception("T√†i kho·∫£n ho·∫∑c m·∫≠t kh·∫©u kh√¥ng ch√≠nh x√°c.");
             }
 
             var id = Convert.ToInt32(reader["Id"]);
             var username = AuthDbHelper.ConvertDbValueToString(reader["Username"], "Username");
             var email = AuthDbHelper.ConvertDbValueToString(reader["Email"], "Email");
             var dbPasswordHash = AuthDbHelper.ConvertDbValueToString(reader["PasswordHash"], "PasswordHash");
+            
+            var roleName = AuthDbHelper.ConvertDbValueToString(reader["RoleName"], "RoleName");
 
             if (!_passwordHasher.VerifyPassword(request.Password, dbPasswordHash))
             {
-                throw new Exception("T‡i kho?n ho?c m?t kh?u khÙng chÌnh x·c.");
+                throw new Exception("T√†i kho·∫£n ho·∫∑c m·∫≠t kh·∫©u kh√¥ng ch√≠nh x√°c.");
             }
 
-            var user = new User
-            {
-                Id = id,
-                Username = username,
-                Email = email
+            var user = new User 
+            { 
+                Id = id, 
+                Username = username, 
+                Email = email 
             };
 
-            return _tokenGenerator.GenerateToken(user);
+            return _tokenGenerator.GenerateToken(user, roleName);
         }
     }
 

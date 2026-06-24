@@ -2,19 +2,18 @@
 using MySqlConnector;
 using System.ComponentModel.DataAnnotations;
 
-namespace Backend.Models
+namespace Backend.Services
 {
     public sealed record UpdateProfileCommand(
         [Required] int UserId, 
         
-        [Required(ErrorMessage = "TÃªn hiá»ƒn thá»‹ khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.")]
-        [MaxLength(35, ErrorMessage = "TÃªn hiá»ƒn thá»‹ khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 35 kÃ½ tá»±.")]
+        [Required(ErrorMessage = "Ten hien thi khong duoc de trong.")]
+        [MaxLength(35, ErrorMessage = "Ten hien thi khong duoc vuot qua 35 ky tu.")]
         string FullName, 
         
-        [MaxLength(200, ErrorMessage = "Tiá»ƒu sá»­ khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 200 kÃ½ tá»±.")]
+        [MaxLength(200, ErrorMessage = "Tieu su khong duoc vuot qua 200 ky tu.")]
         string? Bio, 
         
-        //[Url(ErrorMessage = "ÄÆ°á»ng dáº«n áº£nh Ä‘áº¡i diá»‡n khÃ´ng há»£p lá»‡.")]
         string? AvatarUrl
     ) : IRequest<bool>;
 
@@ -102,8 +101,7 @@ namespace Backend.Models
         }
     }
 
-    public record UserProfileDto(string Email, string FullName, string Bio, string? AvatarUrl);
-
+    public record UserProfileDto(string Email, string FullName, string Bio, string? AvatarUrl, DateTime? UpdatedAt);
     public record GetProfileQuery(int UserId) : IRequest<UserProfileDto?>;
 
     public class GetProfileQueryHandler : IRequestHandler<GetProfileQuery, UserProfileDto?>
@@ -118,7 +116,7 @@ namespace Backend.Models
             await connection.OpenAsync(cancellationToken);
 
             const string sql = @"
-                SELECT u.Email, p.FullName, p.Bio, p.AvatarUrl 
+                SELECT u.Email, p.FullName, p.Bio, p.AvatarUrl, p.UpdatedAt
                 FROM Users u
                 LEFT JOIN UserProfiles p ON u.Id = p.UserId
                 WHERE u.Id = @UserId LIMIT 1;";
@@ -130,13 +128,13 @@ namespace Backend.Models
             if (await reader.ReadAsync(cancellationToken))
             {
                 return new UserProfileDto(
-                    Email: reader.GetString("Email"),
-                    FullName: reader.IsDBNull(reader.GetOrdinal("FullName")) ? "" : reader.GetString("FullName"),
-                    Bio: reader.IsDBNull(reader.GetOrdinal("Bio")) ? "" : reader.GetString("Bio"),
-                    AvatarUrl: reader.IsDBNull(reader.GetOrdinal("AvatarUrl")) ? null : reader.GetString("AvatarUrl")
+                Email: reader.GetString("Email"),
+                FullName: reader.IsDBNull(reader.GetOrdinal("FullName")) ? "" : reader.GetString("FullName"),
+                Bio: reader.IsDBNull(reader.GetOrdinal("Bio")) ? "" : reader.GetString("Bio"),
+                AvatarUrl: reader.IsDBNull(reader.GetOrdinal("AvatarUrl")) ? null : reader.GetString("AvatarUrl"),
+                UpdatedAt: reader.IsDBNull(reader.GetOrdinal("UpdatedAt")) ? null : reader.GetDateTime("UpdatedAt")
                 );
             }
-            
             return null;
         }
     }

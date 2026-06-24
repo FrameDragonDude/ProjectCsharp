@@ -1,8 +1,8 @@
-﻿using Backend.Models;
+﻿using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+using Backend.Services;
 
 namespace Backend.Controllers
 {
@@ -24,7 +24,7 @@ namespace Backend.Controllers
             var query = new GetProfileQuery(userId);
             var profile = await _mediator.Send(query);
 
-            if (profile == null) return NotFound("KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin há»“ sÆ¡.");
+            if (profile == null) return NotFound("Khong tim thay thong tin ho so.");
             
             return Ok(profile);
         }
@@ -38,7 +38,7 @@ namespace Backend.Controllers
             var command = new UpdateProfileCommand(userId, request.FullName, request.Bio, request.AvatarUrl);
             var success = await _mediator.Send(command);
             
-            return success ? Ok("Cáº­p nháº­t thÃ nh cÃ´ng") : BadRequest("Lá»—i khi cáº­p nháº­t");
+            return success ? Ok("Cap nhat thanh cong") : BadRequest("Cap nhat that bai");
         }
     }
     public record UpdateProfileRequest(string FullName, string Bio, string AvatarUrl);

@@ -1,4 +1,4 @@
-namespace Backend.Data.Security
+namespace Backend.Data.Security // Hoặc Backend.Infrastructure.Security tùy bạn đặt
 {
     public interface IPasswordHasher
     {
