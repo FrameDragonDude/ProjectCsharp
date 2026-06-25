@@ -16,7 +16,7 @@ namespace Backend.Services
         
         string? AvatarUrl
     ) : IRequest<bool>;
-
+    
     public class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileCommand, bool>
     {
         private readonly IConfiguration _configuration;
@@ -29,9 +29,11 @@ namespace Backend.Services
             await connection.OpenAsync(cancellationToken);
 
             const string sql = @"
-                UPDATE UserProfiles 
-                SET FullName = @FullName, Bio = @Bio, AvatarUrl = @AvatarUrl
-                WHERE UserId = @UserId;";
+    UPDATE UserProfiles 
+    SET FullName = @FullName, 
+        Bio = @Bio, 
+        AvatarUrl = COALESCE(@AvatarUrl, AvatarUrl)
+    WHERE UserId = @UserId;";
 
             await using var cmd = new MySqlCommand(sql, connection);
             cmd.Parameters.AddWithValue("@UserId", request.UserId);
@@ -47,10 +49,10 @@ namespace Backend.Services
 
     public sealed record ToggleFollowCommand(
         [Required] int FollowerId, 
-        [Required(ErrorMessage = "MÃ£ Ä‘á»‘i tÆ°á»£ng theo dÃµi khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.")] 
+        [Required(ErrorMessage = "TargetId khong duoc de trong.")] 
         int TargetId,
         [Required]
-        [RegularExpression("^(User|Artist)$", ErrorMessage = "Loáº¡i Ä‘á»‘i tÆ°á»£ng (TargetType) chá»‰ Ä‘Æ°á»£c phÃ©p lÃ  'User' hoáº·c 'Artist'.")]
+        [RegularExpression("^(User|Artist)$", ErrorMessage = "TargetType phai la 'User' hoac 'Artist'.")]
         string TargetType
     ) : IRequest<string>;
 
@@ -96,7 +98,7 @@ namespace Backend.Services
                 insertCmd.Parameters.AddWithValue("@TargetType", request.TargetType);
                 await insertCmd.ExecuteNonQueryAsync(cancellationToken);
                 
-                return $"ÄÃ£ theo dÃµi {request.TargetType} thÃ nh cÃ´ng!";
+                return $"Da theo doi {request.TargetType} thanh cong!";
             }
         }
     }

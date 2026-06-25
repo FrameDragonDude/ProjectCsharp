@@ -23,7 +23,7 @@ namespace Backend.Controllers
         {
             if (type != "User" && type != "Artist") 
             {
-                return BadRequest("Loáº¡i Ä‘á»‘i tÆ°á»£ng (type) chá»‰ Ä‘Æ°á»£c phÃ©p lÃ  'User' hoáº·c 'Artist'.");
+                return BadRequest("Loại theo dõi không hợp lệ. Chỉ chấp nhận 'User' hoặc 'Artist'.");
             }
 
             var myUserIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -31,7 +31,7 @@ namespace Backend.Controllers
 
             if (type == "User" && myUserId == targetId) 
             {
-                return BadRequest("Báº¡n khÃ´ng thá»ƒ tá»± theo dÃµi chÃ­nh mÃ¬nh.");
+                return BadRequest("Bạn không thể theo dõi chính mình.");
             }
 
             var command = new ToggleFollowCommand(myUserId, targetId, type);

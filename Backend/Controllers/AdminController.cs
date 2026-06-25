@@ -2,6 +2,8 @@ using Backend.Services;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
+using System.IO;
 
 namespace Backend.Controllers
 {
@@ -32,13 +34,34 @@ namespace Backend.Controllers
         }
 
         [HttpPut("users/{targetUserId}/profile")]
-        public async Task<IActionResult> UpdateUserProfile(int targetUserId, [FromBody] UpdateProfileRequest request)
+        public async Task<IActionResult> UpdateUserProfile(int targetUserId, [FromForm] UpdateProfileRequest request)
         {
+            string? avatarUrl = null;
+
+            if (request.AvatarFile != null)
+            {
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+
+                var uniqueFileName = Guid.NewGuid().ToString() + "_" + request.AvatarFile.FileName;
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await request.AvatarFile.CopyToAsync(fileStream);
+                }
+
+                avatarUrl = $"/uploads/{uniqueFileName}";
+            }
+
             var command = new UpdateProfileCommand(
                 UserId: targetUserId, 
                 FullName: request.FullName, 
                 Bio: request.Bio, 
-                AvatarUrl: request.AvatarUrl
+                AvatarUrl: avatarUrl 
             );
             
             var success = await _mediator.Send(command);
@@ -47,7 +70,6 @@ namespace Backend.Controllers
             {
                 return Ok(new { Message = "Cập nhật hồ sơ thành công bởi Admin." });
             }
-            
             return BadRequest(new { Message = "Không tìm thấy người dùng hoặc cập nhật thất bại." });
         }
     }
