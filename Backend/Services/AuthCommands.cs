@@ -150,6 +150,45 @@ VALUES (@UserId, @FullName, 'Ch�o m?ng d?n v?i TuneVault!');";
         }
     }
 
+    public sealed record ChangePasswordCommand(int UserId, string OldPassword, string NewPassword) : IRequest<bool>;
+
+    public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordCommand, bool>
+    {
+        private readonly IConfiguration _configuration;
+        private readonly IPasswordHasher _passwordHasher;
+
+        public ChangePasswordCommandHandler(IConfiguration configuration, IPasswordHasher passwordHasher)
+        {
+            _configuration = configuration;
+            _passwordHasher = passwordHasher;
+        }
+
+        public async Task<bool> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
+        {
+            var connString = _configuration.GetConnectionString("SpotifyDb");
+            await using var connection = new MySqlConnection(connString);
+            await connection.OpenAsync(cancellationToken);
+
+            const string getPassSql = "SELECT PasswordHash FROM Users WHERE Id = @Id LIMIT 1;";
+            await using var getCmd = new MySqlCommand(getPassSql, connection);
+            getCmd.Parameters.AddWithValue("@Id", request.UserId);
+            
+            var currentHash = (string?)await getCmd.ExecuteScalarAsync(cancellationToken);
+            if (currentHash == null || !_passwordHasher.VerifyPassword(request.OldPassword, currentHash))
+            {
+                throw new Exception("Mật khẩu cũ không chính xác!");
+            }
+
+            var newHash = _passwordHasher.HashPassword(request.NewPassword);
+            const string updateSql = "UPDATE Users SET PasswordHash = @NewHash WHERE Id = @Id;";
+            await using var updateCmd = new MySqlCommand(updateSql, connection);
+            updateCmd.Parameters.AddWithValue("@NewHash", newHash);
+            updateCmd.Parameters.AddWithValue("@Id", request.UserId);
+
+            var rows = await updateCmd.ExecuteNonQueryAsync(cancellationToken);
+            return rows > 0;
+        }
+    }
     internal static class AuthDbHelper
     {
         public static string ConvertDbValueToString(object value, string columnName)
