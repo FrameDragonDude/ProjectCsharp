@@ -2,11 +2,12 @@ import { create } from 'zustand';
 import type { MediaItem } from '../types';
 import { useAuthStore } from './useAuthStore';
 import { recordPlayHistory as recordPlayHistoryApi } from '../services/api/tuneVaultApi';
+import { getUserIdFromToken } from '../utils/authUtils';
 
-const fallbackUserId = '22222222-2222-2222-2222-222200000002';
+const fallbackUserId = '2';
 
 const recordPlayHistory = (mediaItemId: string) => {
-	const userId = useAuthStore.getState().user?.id ?? fallbackUserId;
+	const userId = useAuthStore.getState().user?.id || getUserIdFromToken() || fallbackUserId;
 	void recordPlayHistoryApi(mediaItemId, userId).catch((error) => {
 		console.error('Khong luu duoc lich su nghe:', error);
 	});

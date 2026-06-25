@@ -1,19 +1,14 @@
 import { Bell, Share2, UserPlus, Music, Check, Circle } from 'lucide-react';
 import { useNotificationStore } from '../../store/useNotificationStore';
-import { useAuthStore } from "../../store/useAuthStore";
-
-// Định nghĩa kiểu dữ liệu cho Thông báo
 
 export default function Notifications() {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotificationStore();
-  const currentUser = useAuthStore((state)=> state.user?.id);
 
-  // Hàm chọn icon dựa trên loại thông báo
   const getIcon = (type: string) => {
     switch (type) {
-      case 'share': return <Share2 size={20} className="text-blue-400" />;
-      case 'follow': return <UserPlus size={20} className="text-green-400" />;
-      case 'system': return <Music size={20} className="text-purple-400" />;
+      case 'Share': return <Share2 size={20} className="text-blue-400" />;
+      case 'Follow': return <UserPlus size={20} className="text-green-400" />;
+      case 'System': return <Music size={20} className="text-purple-400" />;
       default: return <Bell size={20} className="text-neutral-400" />;
     }
   };
@@ -53,12 +48,19 @@ export default function Notifications() {
       return <span>Bạn có một thông báo mới.</span>;
     }
   };
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
+
+ const formatTime = (dateString: string) => {
+  if (!dateString) return "";
+  const utcString = dateString.endsWith('Z') || dateString.includes('+') ? dateString : `${dateString}Z`;
+    const date = new Date(utcString);
     return date.toLocaleString('vi-VN', { 
-      hour: '2-digit', minute: '2-digit', 
-      day: '2-digit', month: '2-digit', year: 'numeric' 
-    });
+    hour: '2-digit', 
+    minute: '2-digit', 
+    day: '2-digit', 
+    month: '2-digit', 
+    year: 'numeric',
+    hour12: false
+  });
   };
 
   return (
@@ -74,13 +76,13 @@ export default function Notifications() {
         
         {unreadCount > 0 && (
           <button 
-            onClick={() =>{ 
-              if (currentUser) markAllAsRead(currentUser);
+            onClick={() => {
+                markAllAsRead();
             }}
             className="flex items-center space-x-2 text-sm text-neutral-400 hover:text-white transition"
           >
             <Check size={16} />
-            <span>Đánh dấu tất cả đã đọc</span>
+            <span>Đánh dấu đọc tất cả</span>
           </button>
         )}
       </div>
@@ -91,11 +93,11 @@ export default function Notifications() {
           notifications.map((notif) => (
             <div 
               key={notif.id}
-              onClick={() => markAsRead(notif.id)}
+              onClick={() => markAsRead(String(notif.id))}
               className={`flex items-start p-4 rounded-lg cursor-pointer transition ${
                 notif.isRead 
-                  ? 'bg-transparent hover:bg-neutral-800/50' 
-                  : 'bg-neutral-800/80 hover:bg-neutral-700/80'
+                   ? 'bg-transparent hover:bg-neutral-800/50' 
+                   : 'bg-neutral-800/80 hover:bg-neutral-700/80'
               }`}
             >
               {/* Icon / Avatar */}
@@ -111,10 +113,10 @@ export default function Notifications() {
                 <p className="text-sm text-neutral-500 mt-1">{formatTime(notif.createdAt)}</p>
               </div>
 
-              {/* Dấu chấm xanh (Unread indicator) */}
+              {/* 🛑 CHẤM ĐỎ THẦN THÁNH CỦA VY Ở ĐÂY NÈ */}
               {!notif.isRead && (
                 <div className="flex items-center justify-center h-full pt-2">
-                  <Circle size={12} fill="#22c55e" className="text-green-500" />
+                  <Circle size={12} fill="#ef4444" className="text-red-500" />
                 </div>
               )}
             </div>
