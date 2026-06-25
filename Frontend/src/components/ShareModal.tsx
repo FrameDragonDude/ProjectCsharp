@@ -4,7 +4,7 @@ import axiosClient from '../services/api/axiosClient';
 
 interface UserOption{
     id: number;
-    fullname: string;
+    fullName: string;
 }
 
 interface ShareModalProps {
@@ -21,7 +21,7 @@ export default function ShareModal ({isOpen, onClose, mediaItemId, mediaTitle}: 
 
     useEffect(() => {
         if(isOpen) {
-            axiosClient.get('/share/users')
+            axiosClient.get('/shares/users')
             .then(res => setUsers(res.data))
             .catch(err => console.error("Lỗi tải danh sách bạn bè: ", err));
         }
@@ -62,7 +62,7 @@ export default function ShareModal ({isOpen, onClose, mediaItemId, mediaTitle}: 
             <select value={targetId} onChange={(e) => setTargetId(e.target.value)} className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500">
               <option value="">-- Chọn thành viên nhóm --</option>
               {users.map(u => (
-                <option key={u.id} value={u.id}>{u.fullname} (ID: {u.id})</option>
+                <option key={u.id} value={u.id}>{u.fullName} (ID: {u.id})</option>
               ))}
             </select>
           </div>
