@@ -4,9 +4,12 @@ using Backend.Models.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Backend.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

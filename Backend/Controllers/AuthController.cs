@@ -6,6 +6,12 @@ using System.Security.Claims;
 
 namespace Backend.Controllers
 {
+    public class ChangePasswordRequest
+        {
+            public string OldPassword { get; set; } = string.Empty;
+            public string NewPassword { get; set; } = string.Empty;
+        }
+
     [ApiController]
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
@@ -45,25 +51,22 @@ namespace Backend.Controllers
             }
         }
 
-        public class ChangePasswordRequest
-        {
-            public string OldPassword { get; set; } = string.Empty;
-            public string NewPassword { get; set; } = string.Empty;
-        }
-
-        [Authorize]
+        [Authorize] 
         [HttpPost("change-password")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
             try 
             { 
                 var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                
                 if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out int userId))
                 {
                     return Unauthorized(new { Message = "Không xác định được danh tính người dùng!" });
                 }
+
                 var command = new ChangePasswordCommand(userId, request.OldPassword, request.NewPassword);
                 var resultMessage = await _mediator.Send(command);
+                
                 return Ok(new { Message = resultMessage }); 
             }
             catch (Exception ex) 

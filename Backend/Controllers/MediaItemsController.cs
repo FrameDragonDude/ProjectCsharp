@@ -3,9 +3,11 @@ using Backend.Infrastructure.Data;
 using Backend.Models.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Backend.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class MediaItemsController : ControllerBase
@@ -20,6 +22,7 @@ public class MediaItemsController : ControllerBase
     }
 
     // GET: api/mediaitems
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> GetMediaItems(
         [FromQuery] string? type,
@@ -56,6 +59,7 @@ public class MediaItemsController : ControllerBase
     }
 
     // GET: api/mediaitems/{id}
+    [AllowAnonymous]
     [HttpGet("{id}")]
     public async Task<IActionResult> GetMediaItem(int id)
     {
@@ -70,6 +74,7 @@ public class MediaItemsController : ControllerBase
     }
 
     // POST: api/mediaitems
+    [Authorize(Roles = "Admin, Artist")]
     [HttpPost]
     public async Task<IActionResult> UploadMediaItem([FromForm] MediaItemUploadDto dto)
     {
@@ -111,6 +116,7 @@ public class MediaItemsController : ControllerBase
     }
 
     // DELETE: api/mediaitems/{id}
+    [Authorize(Roles = "Admin, Artist")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteMediaItem(int id)
     {

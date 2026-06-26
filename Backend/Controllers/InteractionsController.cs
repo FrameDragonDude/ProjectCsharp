@@ -3,9 +3,11 @@ using Backend.Infrastructure.Data;
 using Backend.Models.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Backend.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class InteractionsController : ControllerBase
