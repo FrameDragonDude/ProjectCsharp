@@ -4,6 +4,7 @@ using Backend.Models.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Backend.Controllers;
 
@@ -81,6 +82,17 @@ public class MediaItemsController : ControllerBase
         if (dto.File == null || dto.File.Length == 0)
             return BadRequest("File is required.");
 
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
+
+        bool isAdmin = User.IsInRole("Admin");
+        int finalArtistId = userId;
+
+        if (isAdmin && dto.ArtistId.HasValue && dto.ArtistId > 0)
+        {
+            finalArtistId = dto.ArtistId.Value;
+        }
+
         var fileId = Guid.NewGuid().ToString();
         var extension = Path.GetExtension(dto.File.FileName);
         var subFolder = dto.MediaType.ToLower() == "video" ? "video" : "audio";
@@ -88,7 +100,6 @@ public class MediaItemsController : ControllerBase
         var relativePath = $"/storage/{subFolder}/{fileName}";
         var absolutePath = Path.Combine(_storagePath, subFolder, fileName);
 
-        // Ensure directory exists
         Directory.CreateDirectory(Path.GetDirectoryName(absolutePath)!);
 
         using (var stream = new FileStream(absolutePath, FileMode.Create))
@@ -98,15 +109,15 @@ public class MediaItemsController : ControllerBase
 
         var mediaItem = new MediaItem
         {
-
             Title = dto.Title,
             MediaType = dto.MediaType,
             FilePath = relativePath,
-            // OwnerId = dto.OwnerId,
-            ArtistId = dto.ArtistId,
+            
+            ArtistId = finalArtistId,
+            
             AlbumId = dto.AlbumId,
             CreatedAt = DateTime.UtcNow,
-            Duration = "0:00" // In a real app, you'd extract this from the file
+            Duration = "0:00" 
         };
 
         _context.MediaItems.Add(mediaItem);

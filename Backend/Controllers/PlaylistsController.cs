@@ -23,11 +23,12 @@ public class PlaylistsController : ControllerBase
     }
 
     // GET: api/playlists/user/{userId}
+    [AllowAnonymous]
     [HttpGet("user/{userId}")]
     public async Task<IActionResult> GetUserPlaylists(int userId)
     {
         var playlists = await _context.Playlists
-            .Where(p => p.CreatedByUserId == userId)
+            .Where(p => p.CreatedByUserId == userId && p.IsPublic)
             .OrderByDescending(p => p.CreatedAt)
             .ToListAsync();
 
@@ -36,15 +37,17 @@ public class PlaylistsController : ControllerBase
 
     // POST: api/playlists/user
     [HttpPost("user")]
-    public async Task<IActionResult> CreatePlaylist(PlaylistCreateDto dto)
+    public async Task<IActionResult> CreatePlaylist([FromBody] PlaylistCreateDto dto)
     {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
+
         var playlist = new Playlist
         {
-
             Name = dto.Name,
             Description = dto.Description,
             IsPublic = dto.IsPublic,
-            CreatedByUserId = dto.CreatedByUserId,
+            CreatedByUserId = userId,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -56,12 +59,23 @@ public class PlaylistsController : ControllerBase
 
     // POST: api/playlists/add-track
     [HttpPost("add-track")]
-    public async Task<IActionResult> AddTrackToPlaylist(PlaylistTrackDto dto)
+    public async Task<IActionResult> AddTrackToPlaylist([FromBody] PlaylistTrackDto dto)
     {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
+
+        var playlist = await _context.Playlists.FindAsync(dto.PlaylistId);
+        if (playlist == null) return NotFound("Không tìm thấy Playlist.");
+
+        bool isAdmin = User.IsInRole("Admin");
+        if (!isAdmin && playlist.CreatedByUserId != userId) 
+        {
+            return StatusCode(403, new { message = "Bạn không có quyền thêm nhạc vào Playlist của người khác!" });
+        }
+
         var exists = await _context.PlaylistTracks
             .AnyAsync(pt => pt.PlaylistId == dto.PlaylistId && pt.MediaItemId == dto.MediaItemId);
-
-        if (exists) return BadRequest("Track already in playlist.");
+        if (exists) return BadRequest("Bài hát đã có sẵn trong playlist.");
 
         var pt = new PlaylistTrack
         {
@@ -80,10 +94,23 @@ public class PlaylistsController : ControllerBase
     [HttpDelete("remove-track")]
     public async Task<IActionResult> RemoveTrackFromPlaylist([FromQuery] int playlistId, [FromQuery] int mediaItemId)
     {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
+
+        var playlist = await _context.Playlists.FindAsync(playlistId);
+        if (playlist == null) return NotFound("Không tìm thấy Playlist.");
+
+        // CHECK QUYỀN SỞ HỮU & ADMIN
+        bool isAdmin = User.IsInRole("Admin");
+        if (!isAdmin && playlist.CreatedByUserId != userId) 
+        {
+            return StatusCode(403, new { message = "Bạn không có quyền xóa nhạc khỏi Playlist của người khác!" });
+        }
+
         var pt = await _context.PlaylistTracks
             .FirstOrDefaultAsync(x => x.PlaylistId == playlistId && x.MediaItemId == mediaItemId);
 
-        if (pt == null) return NotFound();
+        if (pt == null) return NotFound("Không tìm thấy bài hát trong playlist này.");
 
         _context.PlaylistTracks.Remove(pt);
         await _context.SaveChangesAsync();
@@ -91,4 +118,3 @@ public class PlaylistsController : ControllerBase
         return NoContent();
     }
 }
-
