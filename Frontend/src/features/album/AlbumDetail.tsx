@@ -4,6 +4,8 @@ import { assignMediaToAlbum, getLibrarySummary } from '../../services/api/tuneVa
 import { usePlayerStore } from '../../store/usePlayerStore';
 import type { Album, MediaItem } from '../../types';
 import { resolveAssetUrl } from '../../utils/resolveAsset';
+import { Send } from 'lucide-react';
+import ShareModal from '../../components/ShareModal';
 
 export default function AlbumDetail() {
   const { id } = useParams();
@@ -17,6 +19,7 @@ export default function AlbumDetail() {
   const [loading, setLoading] = useState(false);
   const playTrack = usePlayerStore((s) => s.playTrack);
   const albumId = id ? String(id) : '';
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -76,8 +79,19 @@ export default function AlbumDetail() {
             <div className="text-neutral-400">No cover</div>
           )}
         </div>
+        
         <div>
-          <h1 className="text-3xl font-bold">{album.title}</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold">{album.title}</h1>
+            <button
+              onClick={() => setIsShareOpen(true)}
+              className="p-1.5 text-neutral-400 hover:text-green-500 bg-neutral-800/50 hover:bg-neutral-800 rounded transition"
+              title="Chia sẻ album"
+            >
+              <Send size={16} />
+            </button>
+          </div>
+
           <p className="text-neutral-400 mt-1">{album.artistName}</p>
           <p className="text-neutral-500 mt-2">{album.releaseDate}</p>
           {album.description && <p className="text-neutral-300 mt-2">{album.description}</p>}
@@ -172,6 +186,14 @@ export default function AlbumDetail() {
           </div>
         )}
       </div>
+
+        <ShareModal 
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        albumId={id}
+        mediaTitle={album?.title || "Album"}
+      />
+
     </div>
   );
 }

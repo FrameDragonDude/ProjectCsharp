@@ -41,7 +41,7 @@ namespace Backend.Controllers
             return success ? Ok("Cáº­p nháº­t thÃ nh cÃ´ng") : BadRequest("Lá»—i khi cáº­p nháº­t");
         }
         [HttpPost("avatar")]
-        public async Task<IActionResult> UploadAvatar([FromForm] IFormFile file)
+        public async Task<IActionResult> UploadAvatar( IFormFile file)
         {
             var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
