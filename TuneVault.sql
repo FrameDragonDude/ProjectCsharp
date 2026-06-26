@@ -68,6 +68,7 @@ CREATE TABLE MediaItems (
     ArtistId INT NULL,                 
     AlbumId INT NULL,
     CoverImageUrl VARCHAR(512) NULL,
+    Description LONGTEXT NULL,
     CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT FK_MediaItems_Artists FOREIGN KEY (ArtistId) REFERENCES Artists(Id) ON DELETE SET NULL,
     CONSTRAINT FK_MediaItems_Albums FOREIGN KEY (AlbumId) REFERENCES Albums(Id) ON DELETE SET NULL
@@ -177,16 +178,16 @@ INSERT INTO Albums (Id, Title, ArtistId, ReleaseDate) VALUES
 
 -- KHÔI PHỤC ĐẦY ĐỦ 9 DỮ LIỆU MẪU CHO MEDIAITEMS
 -- Cấu trúc: Id, Title, FilePath, Duration, MediaType, ArtistId, AlbumId, CoverImageUrl
-INSERT INTO MediaItems (Id, Title, FilePath, Duration, MediaType, ArtistId, AlbumId, CoverImageUrl) VALUES
-(1, 'Chúng Ta Của Hiện Tại', '/storage/audio/chung_ta_cua_hien_tai.mp3', '5:02', 'Audio', 1, 1, '/storage/pics/chung_ta_cua_hien_tai.jpg'), 
-(2, 'Muộn Rồi Mà Sao Còn', '/storage/audio/muon_roi_ma_sao_con.mp3', '4:48', 'Audio', 1, NULL, '/storage/pics/muon_roi_ma_sao_con.jpg'), 
-(3, 'Chúng Ta Của Tương Lai', '/storage/audio/chung_ta_cua_tuong_lai.mp3', '4:15', 'Audio', 1, 1, '/storage/pics/chung_ta_cua_tuong_lai.jpg'),
-(4, 'Lạc Trôi', '/storage/audio/lac_troi.mp3', '3:52', 'Audio', 1, NULL, '/storage/pics/lac_troi.jpg'),
-(5, 'Hãy Trao Cho Anh', '/storage/audio/hay_trao_cho_anh.mp3', '4:05', 'Audio', 1, NULL, '/storage/pics/hay_trao_cho_anh.jpg'),
-(6, 'Chạy Ngay Đi', '/storage/audio/chay_ngay_di.mp3', '4:00', 'Audio', 1, NULL, '/storage/pics/chay_ngay_di.jpg'),
-(7, 'Nơi Này Có Anh', '/storage/audio/noi_nay_co_anh.mp3', '4:20', 'Audio', 1, NULL, '/storage/pics/noi_nay_co_anh.jpg'),
-(8, 'Âm Thầm Bên Em', '/storage/audio/am_tham_ben_em.mp3', '4:53', 'Audio', 1, NULL, '/storage/pics/am_tham_ben_em.jpg'),
-(9, 'Cơn Mưa Ngang Qua', '/storage/audio/con_mua_ngang_qua.mp3', '3:51', 'Audio', 1, NULL, '/storage/pics/con_mua_ngang_qua.jpg');
+INSERT INTO MediaItems (Id, Title, FilePath, Duration, MediaType, ArtistId, AlbumId, CoverImageUrl, Description) VALUES
+(1, 'Chúng Ta Của Hiện Tại', '/storage/audio/chung_ta_cua_hien_tai.mp3', '5:02', 'Audio', 1, 1, '/storage/pics/chung_ta_cua_hien_tai.jpg', 'Chúng Ta Của Hiện Tại' ), 
+(2, 'Muộn Rồi Mà Sao Còn', '/storage/audio/muon_roi_ma_sao_con.mp3', '4:48', 'Audio', 1, NULL, '/storage/pics/muon_roi_ma_sao_con.jpg', 'Muộn Rồi Mà Sao Còn'), 
+(3, 'Chúng Ta Của Tương Lai', '/storage/audio/chung_ta_cua_tuong_lai.mp4', '4:15', 'Audio', 1, 1, '/storage/pics/chung_ta_cua_tuong_lai.jpg', 'Chúng Ta Của Tương Lai'),
+(4, 'Lạc Trôi', '/storage/audio/lac_troi.mp3', '3:52', 'Audio', 1, NULL, '/storage/pics/lac_troi.jpg', 'Lạc Trôi'),
+(5, 'Hãy Trao Cho Anh', '/storage/audio/hay_trao_cho_anh.mp3', '4:05', 'Audio', 1, NULL, '/storage/pics/hay_trao_cho_anh.jpg', 'Hãy Trao Cho Anh'),
+(6, 'Chạy Ngay Đi', '/storage/audio/chay_ngay_di.mp3', '4:00', 'Audio', 1, NULL, '/storage/pics/chay_ngay_di.jpg', 'Chạy Ngay Đi'),
+(7, 'Nơi Này Có Anh', '/storage/audio/noi_nay_co_anh.mp3', '4:20', 'Audio', 1, NULL, '/storage/pics/noi_nay_co_anh.jpg', 'Nơi Này Có Anh'),
+(8, 'Âm Thầm Bên Em', '/storage/audio/am_tham_ben_em.mp3', '4:53', 'Audio', 1, NULL, '/storage/pics/am_tham_ben_em.jpg', 'Âm Thầm Bên Em'),
+(9, 'Cơn Mưa Ngang Qua', '/storage/audio/con_mua_ngang_qua.mp3', '3:51', 'Audio', 1, NULL, '/storage/pics/con_mua_ngang_qua.jpg', 'Cơn Mưa Ngang Qua');
 
 INSERT INTO Playlists (Id, Name, Description, CreatedByUserId) VALUES
 (1, 'Nhạc Chill Cuối Tuần', 'Danh sách phát nhạc thư giãn', 1),

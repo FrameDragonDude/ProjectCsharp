@@ -4,9 +4,10 @@ public sealed record MediaItemDto(
     int Id,
     string Title,
     string FilePath,
+    string Description,
     string Duration,
     string MediaType,
-    int ArtistId,
+    int? ArtistId,
     // int OwnerId,
     int? AlbumId,
     string? AlbumTitle,
@@ -28,7 +29,8 @@ public sealed record ArtistSummaryDto(
     string? AvatarUrl,
     int AlbumCount,
     int TrackCount,
-    string? CoverImageUrl);
+    string? CoverImageUrl,
+    bool IsFollowing = false);
 
 public sealed record ArtistDetailDto(
     ArtistSummaryDto Artist,
@@ -95,5 +97,7 @@ public sealed record PlayHistoryDto(
     int Id,
     int MediaItemId,
     string? MediaTitle,
+    string? ArtistName,
+    string? CoverImageUrl,
     DateTime PlayedAt
 );

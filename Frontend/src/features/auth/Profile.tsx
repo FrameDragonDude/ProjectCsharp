@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Settings, Edit2, MapPin, Link as LinkIcon, User } from 'lucide-react';
 import EditProfileModal from './EditProfileModal';
-import { getProfile } from '../../services/api/tuneVaultApi';
+import { getProfile, getLibrarySummary } from '../../services/api/tuneVaultApi';
 import { resolveAssetUrl } from '../../utils/resolveAsset';
+import type { Playlist } from '../../types';
+import { Link } from 'react-router-dom';
+import { Music } from 'lucide-react';
 
 export default function Profile() {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
 
   const [userProfile, setUserProfile] = useState({
     fullName: '',
@@ -25,13 +29,19 @@ export default function Profile() {
     async function fetchProfile() {
       try {
         setLoading(true);
-        const data = await getProfile();
+        const [data, libraryData] = await Promise.all([
+          getProfile(),
+          getLibrarySummary()
+        ]);
+        
         setUserProfile(prev => ({
           ...prev,
           fullName: data.fullName || '',
           bio: data.bio || '',
           avatarUrl: data.avatarUrl || '',
+          publicPlaylists: libraryData.playlists.filter(p => p.isPublic).length,
         }));
+        setPlaylists(libraryData.playlists.filter(p => p.isPublic));
       } catch (error) {
         console.error("Lỗi tải thông tin user", error);
       } finally {
@@ -41,12 +51,7 @@ export default function Profile() {
     fetchProfile();
   }, []);
 
-  // Dữ liệu mẫu cho Playlist công khai của user
-  const mockPublicPlaylists = [
-    { id: 1, title: 'Nhạc code đêm khuya', followers: 56 },
-    { id: 2, title: 'Đồ án mệt quá', followers: 12 },
-    { id: 3, title: 'Thư giãn cuối tuần', followers: 89 },
-  ];
+  // Xóa mock data
 
   return (
     <div className="flex flex-col h-full overflow-y-auto text-white pb-24">
@@ -90,50 +95,47 @@ export default function Profile() {
               <Edit2 size={16} />
               <span>Chỉnh sửa hồ sơ</span>
             </button>
-            <button className="text-neutral-400 hover:text-white transition">
-              <Settings size={28} />
-            </button>
           </div>
         </div>
 
         {/* Cột thông tin chi tiết */}
-        <div className="max-w-2xl bg-neutral-800/30 p-4 rounded-lg mb-10 border border-neutral-800">
-          <p className="text-neutral-200 text-sm mb-4 leading-relaxed">
-            {userProfile.bio}
-          </p>
-          <div className="flex flex-col space-y-2 text-xs text-neutral-400 font-medium">
-            <div className="flex items-center space-x-2">
-              <MapPin size={14} />
-              <span>{userProfile.location}</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <LinkIcon size={14} />
-              <a href="#" className="hover:underline hover:text-white transition">{userProfile.website}</a>
-            </div>
+        {userProfile.bio && (
+          <div className="max-w-2xl bg-neutral-800/30 p-4 rounded-lg mb-10 border border-neutral-800">
+            <p className="text-neutral-200 text-sm leading-relaxed whitespace-pre-wrap">
+              {userProfile.bio}
+            </p>
           </div>
-        </div>
+        )}
 
         {/* Danh sách Playlist công khai */}
-        <div>
-          <h2 className="text-2xl font-bold mb-6">Danh sách phát công khai</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {mockPublicPlaylists.map((playlist) => (
-              <div
-                key={playlist.id}
-                className="p-4 bg-neutral-800/40 hover:bg-neutral-800 rounded-md cursor-pointer transition group"
-              >
-                <div className="w-full aspect-square mb-4 rounded shadow-lg bg-neutral-700 relative">
-                  {/* Nút Play hiển thị khi hover */}
-                  <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full items-center justify-center text-black hidden group-hover:flex shadow-xl transform translate-y-2 group-hover:translate-y-0 transition-all">
-                    ▶
+        {playlists.length > 0 && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Danh sách phát công khai</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {playlists.map((playlist) => (
+                <Link
+                  to={`/playlist/${playlist.id}`}
+                  key={playlist.id}
+                  className="p-4 bg-neutral-800/40 hover:bg-neutral-800 rounded-md cursor-pointer transition group"
+                >
+                  <div className="w-full aspect-square mb-4 rounded shadow-lg bg-neutral-700 relative flex items-center justify-center overflow-hidden">
+                    {playlist.coverImageUrl ? (
+                      <img src={resolveAssetUrl(playlist.coverImageUrl)} alt={playlist.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <Music size={40} className="text-neutral-500" />
+                    )}
+                    {/* Nút Play hiển thị khi hover */}
+                    <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full items-center justify-center text-black hidden group-hover:flex shadow-xl transform translate-y-2 group-hover:translate-y-0 transition-all">
+                      ▶
+                    </div>
                   </div>
-                </div>
-                <h4 className="font-semibold text-white truncate mb-1">{playlist.title}</h4>
-                <p className="text-sm text-neutral-400">{playlist.followers} người theo dõi</p>
-              </div>
-            ))}
+                  <h4 className="font-semibold text-white truncate mb-1">{playlist.name}</h4>
+                  <p className="text-sm text-neutral-400">{playlist.trackCount} bài hát</p>
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
       <EditProfileModal 
         isOpen={isEditModalOpen} 
@@ -142,6 +144,14 @@ export default function Profile() {
           fullName: userProfile.fullName,
           bio: userProfile.bio,
           avatarUrl: userProfile.avatarUrl
+        }}
+        onSaveSuccess={(updatedData) => {
+          setUserProfile(prev => ({
+            ...prev,
+            fullName: updatedData.fullName,
+            bio: updatedData.bio,
+            avatarUrl: updatedData.avatarUrl
+          }));
         }}
       />
     </div>

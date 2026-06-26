@@ -61,7 +61,7 @@ public class MediaItemsController : ControllerBase
     {
         var item = await _context.MediaItems
             .Include(m => m.Album)
-            .Include(m => m.Owner)
+            .Include(m => m.Artist)
             .FirstOrDefaultAsync(m => m.Id == id);
 
         if (item == null) return NotFound();
@@ -97,7 +97,8 @@ public class MediaItemsController : ControllerBase
             Title = dto.Title,
             MediaType = dto.MediaType,
             FilePath = relativePath,
-            OwnerId = dto.OwnerId,
+            // OwnerId = dto.OwnerId,
+            ArtistId = dto.ArtistId,
             AlbumId = dto.AlbumId,
             CreatedAt = DateTime.UtcNow,
             Duration = "0:00" // In a real app, you'd extract this from the file

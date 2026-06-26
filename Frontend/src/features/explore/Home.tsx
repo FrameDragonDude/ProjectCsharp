@@ -30,13 +30,14 @@ export default function Home() {
   const [error, setError] = useState("");
   const [recentSongs, setRecentSongs] = useState<PlayHistory[]>([]);
   const [isShareOpen, setIsShareOpen] = useState(false);
-  const [selectMedia, setSelectedMedia] = useState({id: '', title: ''});
+  const [selectMedia, setSelectedMedia] = useState({ id: "", title: "" });
 
   const playTrack = usePlayerStore((state) => state.playTrack);
   const openVideo = usePlayerStore((state) => state.openVideo);
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const user = useAuthStore((state) => state.user);
   const currentUser = user?.id || getUserIdFromToken();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   useEffect(() => {
     let mounted = true;
@@ -54,33 +55,65 @@ export default function Home() {
         setError("");
       } catch (requestError) {
         if (!mounted) return;
-        setError(requestError instanceof Error ? requestError.message : "Khong tai duoc du lieu tu API");
-      } { if (mounted) setLoading(false); }
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : "Khong tai duoc du lieu tu API",
+        );
+      }
+      {
+        if (mounted) setLoading(false);
+      }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
     let mounted = true;
-    if (currentUser) {
+
+    if (isAuthenticated && currentUser) {
       void getRecentPlayHistories(currentUser.toString())
-        .then((data) => { if (mounted) setRecentSongs(data.slice(0, 10)); })
+        .then((data) => {
+          if (mounted) {
+            setRecentSongs(data.slice(0, 20));
+          }
+        })
         .catch((err) => console.error("Lỗi lấy lịch sử nghe nhạc:", err));
     }
-    return () => { mounted = false; };
-  }, [currentUser, currentTrack?.id]);
+
+    return () => {
+      mounted = false;
+    };
+  }, [currentUser, currentTrack?.id, isAuthenticated]);
 
   const artistCards = useMemo<ArtistCard[]>(() => {
     return artists.map((artist) => {
-      const artistAlbums = albums.filter((album) => album.artistId === artist.id);
-      const albumTracks = songs.filter((song) => artistAlbums.some((album) => album.id === song.albumId));
-      const coverImageUrl = artist.avatarUrl ?? artistAlbums.find((album) => album.coverImageUrl)?.coverImageUrl ?? artist.coverImageUrl ?? albumTracks.find((song) => song.coverImageUrl)?.coverImageUrl ?? null;
+      const artistAlbums = albums.filter(
+        (album) => album.artistId === artist.id,
+      );
+      const albumTracks = songs.filter((song) =>
+        artistAlbums.some((album) => album.id === song.albumId),
+      );
+      const coverImageUrl =
+        artist.avatarUrl ??
+        artistAlbums.find((album) => album.coverImageUrl)?.coverImageUrl ??
+        artist.coverImageUrl ??
+        albumTracks.find((song) => song.coverImageUrl)?.coverImageUrl ??
+        null;
       return { ...artist, coverImageUrl };
     });
   }, [albums, artists, songs]);
 
-  const artistAlbumCount = (artistId: string) => albums.filter((album) => album.artistId === artistId).length;
-  const artistTrackCount = (artistId: string) => songs.filter((song) => albums.some((album) => album.id === song.albumId && album.artistId === artistId)).length;
+  const artistAlbumCount = (artistId: string) =>
+    albums.filter((album) => album.artistId === artistId).length;
+  const artistTrackCount = (artistId: string) =>
+    songs.filter((song) =>
+      albums.some(
+        (album) => album.id === song.albumId && album.artistId === artistId,
+      ),
+    ).length;
 
   return (
     <div className="p-6 space-y-10 text-white">
@@ -90,27 +123,53 @@ export default function Home() {
       <section className="space-y-4">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-neutral-400 mb-2">Nghệ sĩ</p>
+            <p className="text-sm uppercase tracking-[0.25em] text-neutral-400 mb-2">
+              Nghệ sĩ
+            </p>
             <h2 className="text-2xl md:text-3xl font-bold">Nghệ sĩ nổi bật</h2>
           </div>
-          <span className="text-sm text-neutral-400">{artistCards.length} nghệ sĩ</span>
+          <span className="text-sm text-neutral-400">
+            {artistCards.length} nghệ sĩ
+          </span>
         </div>
         {loading ? (
-          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">Đang tải dữ liệu...</div>
+          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">
+            Đang tải dữ liệu...
+          </div>
         ) : error ? (
-          <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-red-300">Không tải được dữ liệu nghệ sĩ. {error}</div>
+          <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-red-300">
+            Không tải được dữ liệu nghệ sĩ. {error}
+          </div>
         ) : artistCards.length === 0 ? (
-          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">Chưa có nghệ sĩ nào trong database.</div>
+          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">
+            Chưa có nghệ sĩ nào trong database.
+          </div>
         ) : (
           <div className="flex gap-4 overflow-x-auto pb-2">
             {artistCards.map((artist) => (
-              <Link key={artist.id} to={`/artist/${artist.id}`} className="min-w-[180px] max-w-[180px] shrink-0 rounded-2xl border border-white/5 bg-white/5 p-4 hover:bg-white/10 transition snap-start">
+              <Link
+                key={artist.id}
+                to={`/artist/${artist.id}`}
+                className="min-w-[180px] max-w-[180px] shrink-0 rounded-2xl border border-white/5 bg-white/5 p-4 hover:bg-white/10 transition snap-start"
+              >
                 <div className="aspect-square rounded-2xl overflow-hidden bg-neutral-800 mb-4 flex items-center justify-center text-neutral-400">
-                  {artist.coverImageUrl ? <img src={resolveAssetUrl(artist.coverImageUrl)} alt={artist.name} className="h-full w-full object-cover" /> : <Users size={42} />}
+                  {artist.coverImageUrl ? (
+                    <img
+                      src={resolveAssetUrl(artist.coverImageUrl)}
+                      alt={artist.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <Users size={42} />
+                  )}
                 </div>
                 <p className="font-semibold truncate">{artist.name}</p>
-                <p className="text-sm text-neutral-400 truncate">{artistAlbumCount(artist.id)} album</p>
-                <p className="text-sm text-neutral-400 truncate">{artistTrackCount(artist.id)} bài hát</p>
+                <p className="text-sm text-neutral-400 truncate">
+                  {artistAlbumCount(artist.id)} album
+                </p>
+                <p className="text-sm text-neutral-400 truncate">
+                  {artistTrackCount(artist.id)} bài hát
+                </p>
               </Link>
             ))}
           </div>
@@ -118,68 +177,166 @@ export default function Home() {
       </section>
 
       {/* NGHE GẦN ĐÂY */}
-      <section className="space-y-4">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-neutral-400 mb-2">Nghe gần đây</p>
-            <h2 className="text-2xl md:text-3xl font-bold">Nhạc bạn vừa nghe</h2>
+      {isAuthenticated && (
+        <section className="space-y-4">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-sm uppercase tracking-[0.25em] text-neutral-400 mb-2">
+                Nghe gần đây
+              </p>
+              <h2 className="text-2xl md:text-3xl font-bold">
+                Nhạc bạn vừa nghe
+              </h2>
+            </div>
+            <span className="text-sm text-neutral-400">Tối đa 20 bài</span>
           </div>
-          <span className="text-sm text-neutral-400">Tối đa 20 bài</span>
-        </div>
-        {loading ? (
-          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">Đang tải dữ liệu...</div>
-        ) : recentSongs.length === 0 ? (
-          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">Chưa có lịch sử nghe gần đây.</div>
-        ) : (
-          <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
-            {recentSongs.map((song) => {
-              const matchingSong = songs.find((s) => s.id === song.mediaItemId);
-              const coverUrl = matchingSong?.coverImageUrl ? resolveAssetUrl(matchingSong.coverImageUrl) : resolveAssetUrl("default-cover.svg");
-              return (
-                <button key={song.id} type="button" onClick={() => { if (matchingSong) playTrack(matchingSong, songs); }} className="min-w-[180px] max-w-[180px] shrink-0 text-left rounded-2xl border border-white/5 bg-neutral-950/70 p-4 hover:bg-neutral-950 transition snap-start">
-                  <img src={coverUrl} alt="cover" className="w-full aspect-square object-cover rounded-xl mb-3 shadow-lg" />
-                  <h3 className="font-semibold truncate">{song.mediaTitle || `Bài hát ${song.mediaItemId.substring(0, 4)}`}</h3>
-                  <p className="text-sm text-neutral-400 truncate">{matchingSong?.artistName ?? "TuneVault"}</p>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </section>
+
+          {loading ? (
+            <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">
+              Đang tải dữ liệu...
+            </div>
+          ) : recentSongs.length === 0 ? (
+            <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">
+              Chưa có lịch sử nghe gần đây.
+            </div>
+          ) : (
+            <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
+              {recentSongs.map((song) => {
+                // Tìm bài hát gốc trùng khớp để lấy thông tin chuẩn xác nhất nếu data từ API nghe gần đây thiếu
+                const matchingSong = songs.find(
+                  (s) => s.id === song.mediaItemId,
+                );
+
+                // Ưu tiên lấy data từ bài hát gốc (matchingSong), nếu không có thì fallback về data của song hoặc default
+                const coverUrl = matchingSong?.coverImageUrl
+                  ? resolveAssetUrl(matchingSong.coverImageUrl)
+                  : song.coverImageUrl
+                    ? resolveAssetUrl(song.coverImageUrl)
+                    : resolveAssetUrl("default-cover.svg");
+
+                const artistName =
+                  matchingSong?.artistName ?? song.artistName ?? "TuneVault";
+
+                return (
+                  <button
+                    key={song.id}
+                    type="button"
+                    onClick={() => {
+                      if (matchingSong) {
+                        playTrack(matchingSong, songs);
+                      }
+                    }}
+                    className="min-w-[180px] max-w-[180px] shrink-0 text-left rounded-2xl border border-white/5 bg-neutral-950/70 p-4 hover:bg-neutral-950 transition snap-start"
+                  >
+                    <img
+                      src={coverUrl}
+                      alt="cover"
+                      className="w-full aspect-square object-cover rounded-xl mb-3 shadow-lg"
+                    />
+                    <h3 className="font-semibold truncate">
+                      {song.mediaTitle ||
+                        matchingSong?.title ||
+                        `Bài hát ${song.mediaItemId.substring(0, 4)}`}
+                    </h3>
+                    <p className="text-sm text-neutral-400 truncate">
+                      {artistName}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* BÀI HÁT */}
       <section className="space-y-4">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-neutral-400 mb-2">Tuần này</p>
+            <p className="text-sm uppercase tracking-[0.25em] text-neutral-400 mb-2">
+              Tuần này
+            </p>
             <h2 className="text-3xl font-bold">Danh sách bài hát</h2>
           </div>
-          <Link to="/library" className="text-sm text-neutral-300 hover:text-white transition">Mở thư viện</Link>
+          <Link
+            to="/library"
+            className="text-sm text-neutral-300 hover:text-white transition"
+          >
+            Mở thư viện
+          </Link>
         </div>
         {loading ? (
-          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">Đang tải dữ liệu...</div>
+          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">
+            Đang tải dữ liệu...
+          </div>
         ) : error ? (
-          <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-red-300">Không tải được dữ liệu bài hát. {error}</div>
+          <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-red-300">
+            Không tải được dữ liệu bài hát. {error}
+          </div>
         ) : songs.length === 0 ? (
-          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">Chưa có bài hát nào trong database.</div>
+          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">
+            Chưa có bài hát nào trong database.
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {songs.slice(0, 6).map((song) => (
-              <div key={song.id} className="group rounded-2xl border border-white/5 bg-white/5 p-4 hover:bg-white/10 transition">
+              <div
+                key={song.id}
+                className="group rounded-2xl border border-white/5 bg-white/5 p-4 hover:bg-white/10 transition"
+              >
                 <div className="flex items-start gap-4">
                   <div className="h-16 w-16 rounded-xl bg-neutral-800 overflow-hidden flex items-center justify-center shrink-0 text-neutral-300">
-                    {song.coverImageUrl ? <img src={resolveAssetUrl(song.coverImageUrl)} alt={song.title} className="h-full w-full object-cover" /> : song.mediaType === "Video" ? <Video size={24} /> : <Music2 size={24} />}
+                    {song.coverImageUrl ? (
+                      <img
+                        src={resolveAssetUrl(song.coverImageUrl)}
+                        alt={song.title}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : song.mediaType === "Video" ? (
+                      <Video size={24} />
+                    ) : (
+                      <Music2 size={24} />
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-lg font-semibold truncate">{song.title}</p>
-                    <p className="text-sm text-neutral-400 truncate">{song.artistName ?? "TuneVault"} • {song.duration}</p>
+                    <p className="text-lg font-semibold truncate">
+                      {song.title}
+                    </p>
+                    <p className="text-sm text-neutral-400 truncate">
+                      {song.artistName ?? "TuneVault"} • {song.duration}
+                    </p>
                     <div className="mt-4 flex items-center gap-3">
-                      <button onClick={() => playTrack(song, songs)} className="inline-flex items-center gap-2 rounded-full bg-white text-black px-4 py-2 text-sm font-semibold hover:scale-[1.02] transition"><Play size={16} /> Phát</button>
-                      <button type="button" onClick={() => { setSelectedMedia({ id: song.id, title: song.title }); setIsShareOpen(true); }} className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-white/10 text-white/80 hover:text-white hover:border-white/30 transition" title="Chia sẻ"><Send size={14} /></button>
+                      <button
+                        onClick={() => playTrack(song, songs)}
+                        className="inline-flex items-center gap-2 rounded-full bg-white text-black px-4 py-2 text-sm font-semibold hover:scale-[1.02] transition"
+                      >
+                        <Play size={16} /> Phát
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedMedia({ id: song.id, title: song.title });
+                          setIsShareOpen(true);
+                        }}
+                        className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-white/10 text-white/80 hover:text-white hover:border-white/30 transition"
+                        title="Chia sẻ"
+                      >
+                        <Send size={14} />
+                      </button>
                       {song.mediaType === "Video" ? (
-                        <button onClick={() => openVideo(song)} className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/80 hover:text-white hover:border-white/30 transition"><Plus size={16} /> Xem video</button>
+                        <button
+                          onClick={() => openVideo(song)}
+                          className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/80 hover:text-white hover:border-white/30 transition"
+                        >
+                          <Plus size={16} /> Xem video
+                        </button>
                       ) : (
-                        <Link to="/library" className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/80 hover:text-white hover:border-white/30 transition"><Plus size={16} /> Thêm vào playlist</Link>
+                        <Link
+                          to="/library"
+                          className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/80 hover:text-white hover:border-white/30 transition"
+                        >
+                          <Plus size={16} /> Thêm vào playlist
+                        </Link>
                       )}
                     </div>
                   </div>
@@ -196,25 +353,55 @@ export default function Home() {
           <h3 className="text-2xl font-bold">Danh sách Album</h3>
         </div>
         {loading ? (
-          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">Đang tải dữ liệu...</div>
+          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">
+            Đang tải dữ liệu...
+          </div>
         ) : albums.length === 0 ? (
-          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">Chưa có album nào trong database.</div>
+          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">
+            Chưa có album nào trong database.
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {albums.map((album) => (
-              <Link key={album.id} to={`/album/${album.id}`} className="block rounded-2xl border border-white/5 bg-neutral-950/60 p-4 hover:bg-neutral-950 transition">
+              <Link
+                key={album.id}
+                to={`/album/${album.id}`}
+                className="block rounded-2xl border border-white/5 bg-neutral-950/60 p-4 hover:bg-neutral-950 transition"
+              >
                 <div className="aspect-square rounded-xl bg-neutral-800 overflow-hidden mb-4 flex items-center justify-center text-neutral-400">
-                  {album.coverImageUrl || songs.find((song) => song.albumId === album.id)?.coverImageUrl ? <img src={resolveAssetUrl(album.coverImageUrl ?? songs.find((song) => song.albumId === album.id)?.coverImageUrl ?? "")} alt={album.title} className="h-full w-full object-cover" /> : <Album size={42} />}
+                  {album.coverImageUrl ||
+                  songs.find((song) => song.albumId === album.id)
+                    ?.coverImageUrl ? (
+                    <img
+                      src={resolveAssetUrl(
+                        album.coverImageUrl ??
+                          songs.find((song) => song.albumId === album.id)
+                            ?.coverImageUrl ??
+                          "",
+                      )}
+                      alt={album.title}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <Album size={42} />
+                  )}
                 </div>
                 <p className="text-lg font-semibold truncate">{album.title}</p>
-                <p className="text-sm text-neutral-400 truncate">{album.artistName ?? "TuneVault"} • {album.releaseDate}</p>
+                <p className="text-sm text-neutral-400 truncate">
+                  {album.artistName ?? "TuneVault"} • {album.releaseDate}
+                </p>
               </Link>
             ))}
           </div>
         )}
       </section>
 
-       <ShareModal isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} mediaItemId={selectMedia.id} mediaTitle={selectMedia.title} /> 
+      <ShareModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        mediaItemId={selectMedia.id}
+        mediaTitle={selectMedia.title}
+      />
     </div>
   );
 }

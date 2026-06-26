@@ -1,4 +1,4 @@
-﻿using Backend.Models;
+using Backend.Models;
 using System.Globalization;
 using System.Text;
 using MySqlConnector;
@@ -55,11 +55,11 @@ public sealed class MySqlMusicCatalogRepository(IConfiguration configuration) : 
         await connection.OpenAsync(cancellationToken);
 
         const string sql = @"
-SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId,
+SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId, m.Description,
     a.Title AS AlbumTitle, art.Name AS ArtistName, COALESCE(m.CoverImageUrl, a.CoverImageUrl) AS CoverImageUrl
 FROM MediaItems m
 LEFT JOIN Albums a ON a.Id = m.AlbumId
-LEFT JOIN Artists art ON art.Id = a.ArtistId
+LEFT JOIN Artists art ON art.Id = m.ArtistId
 WHERE m.Id = @Id
 LIMIT 1;";
 
@@ -122,12 +122,12 @@ LIMIT 1;";
         await connection.OpenAsync(cancellationToken);
 
         const string sql = @"
-SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId,
+SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId, m.Description,
     a.Title AS AlbumTitle, art.Name AS ArtistName, COALESCE(m.CoverImageUrl, a.CoverImageUrl) AS CoverImageUrl
 FROM PlaylistTracks pt
 INNER JOIN MediaItems m ON m.Id = pt.MediaItemId
 LEFT JOIN Albums a ON a.Id = m.AlbumId
-LEFT JOIN Artists art ON art.Id = a.ArtistId
+LEFT JOIN Artists art ON art.Id = m.ArtistId
 WHERE pt.PlaylistId = @PlaylistId
 ORDER BY pt.AddedAt DESC;";
 
@@ -182,7 +182,7 @@ ORDER BY m.CreatedAt DESC;";
                 results.Add(new SearchResultDto(
                     reader.GetInt32(reader.GetOrdinal("Id")),
                     title,
-                    $"{artistName} â€¢ {duration}",
+                    $"{artistName} • {duration}",
                     "Song",
                     reader.GetString("MediaType"),
                     reader.IsDBNull(reader.GetOrdinal("AlbumId")) ? null : reader.GetInt32(reader.GetOrdinal("AlbumId")),
@@ -208,7 +208,7 @@ ORDER BY a.ReleaseDate DESC;";
                 results.Add(new SearchResultDto(
                     reader.GetInt32(reader.GetOrdinal("Id")),
                     reader.GetString("Title"),
-                    $"{artistName} â€¢ Album",
+                    $"{artistName} • Album",
                     "Album",
                     null,
                     null,
@@ -239,7 +239,7 @@ ORDER BY m.CreatedAt DESC;";
                 results.Add(new SearchResultDto(
                     reader.GetInt32(reader.GetOrdinal("Id")),
                     reader.GetString("Title"),
-                    $"{artistName} â€¢ {duration}",
+                    $"{artistName} • {duration}",
                     "Video",
                     reader.GetString("MediaType"),
                     reader.IsDBNull(reader.GetOrdinal("AlbumId")) ? null : reader.GetInt32(reader.GetOrdinal("AlbumId")),
@@ -274,7 +274,7 @@ ORDER BY p.CreatedAt DESC;";
                 results.Add(new SearchResultDto(
                     reader.GetInt32(reader.GetOrdinal("Id")),
                     reader.GetString("Name"),
-                    $"{reader.GetString("TrackCount")} bÃ i hÃ¡t",
+                    $"{reader.GetString("TrackCount")} bài hát",
                     "Playlist",
                     null,
                     null,
@@ -355,7 +355,6 @@ VALUES (@PlaylistId, @MediaItemId);";
 
     public async Task<AlbumDto> CreateAlbumAsync(CreateAlbumRequest request, CancellationToken cancellationToken = default)
     {
-        var albumId = 0;
         var title = request.Title?.Trim() ?? string.Empty;
         var artistName = request.ArtistName?.Trim() ?? "TuneVault";
         var cover = string.IsNullOrWhiteSpace(request.CoverImageUrl) ? null : request.CoverImageUrl.Trim();
@@ -371,49 +370,58 @@ VALUES (@PlaylistId, @MediaItemId);";
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
         try
         {
-            // find artist
-            int artistId = 0;
-            const string findArtistSql = @"SELECT Id FROM Artists WHERE Name = @Name LIMIT 1;";
+            var artistId = 0;
+            var resolvedArtistName = artistName;
+            const string findArtistSql = @"
+SELECT Id, Name FROM Artists
+WHERE LOWER(TRIM(Name)) = LOWER(TRIM(@Name))
+LIMIT 1;";
             await using (var findCmd = new MySqlCommand(findArtistSql, connection, transaction))
             {
                 findCmd.Parameters.AddWithValue("@Name", artistName);
-                var res = await findCmd.ExecuteScalarAsync(cancellationToken);
-                if (res != null)
+                await using var reader = await findCmd.ExecuteReaderAsync(cancellationToken);
+                if (await reader.ReadAsync(cancellationToken))
                 {
-                    artistId = Convert.ToInt32(res, CultureInfo.InvariantCulture);
+                    artistId = reader.GetInt32(reader.GetOrdinal("Id"));
+                    resolvedArtistName = reader.GetString("Name");
                 }
             }
 
             if (artistId <= 0)
             {
-                artistId = (int)0;
-                const string insertArtist = @"INSERT INTO Artists (Name) VALUES (@Name);";
-                await using (var insertCmd = new MySqlCommand(insertArtist, connection, transaction))
+                const string fallbackArtistSql = @"SELECT Id, Name FROM Artists ORDER BY Id LIMIT 1;";
+                await using var fallbackCmd = new MySqlCommand(fallbackArtistSql, connection, transaction);
+                await using var reader = await fallbackCmd.ExecuteReaderAsync(cancellationToken);
+                if (await reader.ReadAsync(cancellationToken))
                 {
-
-                    insertCmd.Parameters.AddWithValue("@Name", artistName);
-                    await insertCmd.ExecuteNonQueryAsync(cancellationToken);
+                    artistId = reader.GetInt32(reader.GetOrdinal("Id"));
+                    resolvedArtistName = reader.GetString("Name");
                 }
             }
 
-            const string insertAlbum = @"
-INSERT INTO Albums (Id, Title, CoverImageUrl, ArtistId, ReleaseDate)
-VALUES (@Id, @Title, @CoverImageUrl, @ArtistId, @ReleaseDate);
-";
+            if (artistId <= 0)
+            {
+                throw new InvalidOperationException("Khong tim thay nghe si de tao album.");
+            }
 
+            const string insertAlbum = @"
+INSERT INTO Albums (Title, CoverImageUrl, ArtistId, ReleaseDate)
+VALUES (@Title, @CoverImageUrl, @ArtistId, @ReleaseDate);";
+
+            var albumId = 0;
             await using (var cmd = new MySqlCommand(insertAlbum, connection, transaction))
             {
-                cmd.Parameters.AddWithValue("@Id", albumId);
                 cmd.Parameters.AddWithValue("@Title", title);
                 cmd.Parameters.AddWithValue("@CoverImageUrl", (object?)cover ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@ArtistId", artistId);
                 cmd.Parameters.AddWithValue("@ReleaseDate", releaseDate);
                 await cmd.ExecuteNonQueryAsync(cancellationToken);
+                albumId = Convert.ToInt32(cmd.LastInsertedId, CultureInfo.InvariantCulture);
             }
 
             await transaction.CommitAsync(cancellationToken);
 
-            return new AlbumDto(albumId, title, cover, artistId, artistName, releaseDate.ToString("yyyy-MM-dd"));
+            return new AlbumDto(albumId, title, cover, artistId, resolvedArtistName, releaseDate.ToString("yyyy-MM-dd"));
         }
         catch
         {
@@ -421,7 +429,6 @@ VALUES (@Id, @Title, @CoverImageUrl, @ArtistId, @ReleaseDate);
             throw;
         }
     }
-
     public async Task<AlbumDto?> UpdateAlbumCoverAsync(string albumId, string? coverImageUrl, CancellationToken cancellationToken = default)
     {
         await using var connection = new MySqlConnection(ConnectionString);
@@ -478,8 +485,8 @@ LIMIT 1;";
             if (rows == 0) return null;
         }
 
-        const string selectSql = @"
-        SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId,
+            const string selectSql = @"
+        SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId, m.Description,
                a.Title AS AlbumTitle, art.Name AS ArtistName, COALESCE(m.CoverImageUrl, a.CoverImageUrl) AS CoverImageUrl
         FROM MediaItems m
         LEFT JOIN Albums a ON a.Id = m.AlbumId
@@ -513,15 +520,15 @@ UPDATE MediaItems SET AlbumId = @AlbumId WHERE Id = @Id;";
     }
 
     private static async Task<IReadOnlyList<MediaItemDto>> LoadMediaItemsAsync(MySqlConnection connection, string mediaType, CancellationToken cancellationToken)
-    {
-        const string sql = @"
-SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId,
-       a.Title AS AlbumTitle, art.Name AS ArtistName, COALESCE(m.CoverImageUrl, a.CoverImageUrl) AS CoverImageUrl
-FROM MediaItems m
-LEFT JOIN Albums a ON a.Id = m.AlbumId
-LEFT JOIN Artists art ON art.Id = a.ArtistId
-WHERE m.MediaType = @MediaType
-ORDER BY m.CreatedAt DESC;";
+        {
+            const string sql = @"
+    SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId, m.Description,
+           a.Title AS AlbumTitle, art.Name AS ArtistName, COALESCE(m.CoverImageUrl, a.CoverImageUrl) AS CoverImageUrl
+    FROM MediaItems m
+    LEFT JOIN Albums a ON a.Id = m.AlbumId
+    LEFT JOIN Artists art ON art.Id = m.ArtistId
+    WHERE m.MediaType = @MediaType
+    ORDER BY m.CreatedAt DESC;";
 
         await using var command = new MySqlCommand(sql, connection);
         command.Parameters.AddWithValue("@MediaType", mediaType);
@@ -605,9 +612,10 @@ ORDER BY p.CreatedAt DESC;";
             reader.GetInt32(reader.GetOrdinal("Id")),
             reader.GetString("Title"),
             reader.GetString("FilePath"),
+            reader.IsDBNull(reader.GetOrdinal("Description")) ? string.Empty : reader.GetString("Description"),
             reader.GetString("Duration"),
             reader.GetString("MediaType"),
-            reader.GetInt32(reader.GetOrdinal("ArtistId")),
+            reader.IsDBNull(reader.GetOrdinal("ArtistId")) ? null : reader.GetInt32(reader.GetOrdinal("ArtistId")),
             reader.IsDBNull(reader.GetOrdinal("AlbumId")) ? null : reader.GetInt32(reader.GetOrdinal("AlbumId")),
             reader.IsDBNull(reader.GetOrdinal("AlbumTitle")) ? null : reader.GetString("AlbumTitle"),
             reader.IsDBNull(reader.GetOrdinal("ArtistName")) ? null : reader.GetString("ArtistName"),
@@ -785,7 +793,7 @@ WHERE UserId = @UserId
         var recentPlays = new List<MediaItemDto>();
 
         const string historySql = @"
-SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId,
+SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId, m.Description,
        a.Title AS AlbumTitle, art.Name AS ArtistName, a.CoverImageUrl
 FROM PlayHistories ph
 INNER JOIN MediaItems m ON m.Id = ph.MediaItemId
@@ -810,7 +818,7 @@ LIMIT @Limit;";
         var candidateItems = new List<MediaItemDto>();
 
         const string candidatesSql = @"
-SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId,
+SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId, m.Description,
        a.Title AS AlbumTitle, art.Name AS ArtistName, a.CoverImageUrl
 FROM MediaItems m
 LEFT JOIN Albums a ON a.Id = m.AlbumId
@@ -906,15 +914,29 @@ LIMIT @Limit;";
         await connection.OpenAsync(cancellationToken);
 
         const string sql = @"
-        SELECT MAX(ph.Id) AS Id, ph.MediaItemId, m.Title AS MediaTitle, MAX(ph.PlayedAt) AS PlayedAt
-        FROM PlayHistories ph
-        INNER JOIN MediaItems m ON ph.MediaItemId = m.Id
-        WHERE ph.UserId = @UserId
-        GROUP BY ph.MediaItemId, m.Title
-        ORDER BY PlayedAt DESC 
-        LIMIT @Limit;";
-
-        await using var command = new MySqlCommand(sql, connection);
+    WITH RankedHistory AS (
+    SELECT
+        ph.Id,
+        ph.MediaItemId,
+        m.Title AS MediaTitle,
+        art.Name AS ArtistName,
+        COALESCE(m.CoverImageUrl, a.CoverImageUrl) AS CoverImageUrl,
+        ph.PlayedAt,
+        ROW_NUMBER() OVER(PARTITION BY ph.MediaItemId ORDER BY ph.PlayedAt DESC) as rn
+    FROM PlayHistories ph
+    INNER JOIN MediaItems m ON ph.MediaItemId = m.Id
+    LEFT JOIN Albums a ON m.AlbumId = a.Id
+    LEFT JOIN Artists art ON m.ArtistId = art.Id
+    WHERE ph.UserId = @UserId
+)
+SELECT Id, MediaItemId, MediaTitle, ArtistName, CoverImageUrl, PlayedAt
+FROM RankedHistory
+WHERE rn = 1
+ORDER BY PlayedAt DESC
+LIMIT @Limit;
+";
+        
+        await using var command = new MySqlCommand(sql,connection);
         command.Parameters.AddWithValue("@UserId", int.Parse(userId, System.Globalization.CultureInfo.InvariantCulture));
         command.Parameters.AddWithValue("@Limit", limit);
 
@@ -926,6 +948,8 @@ LIMIT @Limit;";
                 reader.GetInt32(reader.GetOrdinal("Id")),
                 reader.GetInt32(reader.GetOrdinal("MediaItemId")),
                 reader.IsDBNull(reader.GetOrdinal("MediaTitle")) ? null : reader.GetString("MediaTitle"),
+                reader.IsDBNull(reader.GetOrdinal("ArtistName")) ? null : reader.GetString("ArtistName"),
+                reader.IsDBNull(reader.GetOrdinal("CoverImageUrl")) ? null : reader.GetString("CoverImageUrl"),
                 reader.GetDateTime("PlayedAt")
             ));
         }

@@ -3,6 +3,7 @@ import Sidebar from './Sidebar';
 import PlayerBar from './PlayerBar';
 import GlobalAudioPlayer from '../../components/GlobalAudioPlayer';
 import VideoOverlay from '../../components/VideoOverlay';
+import SongDetailPanel from './SongDetailPanel';
 
 export default function MainLayout() {
   return (
@@ -17,9 +18,7 @@ export default function MainLayout() {
 
         <aside className="w-72 bg-black hidden lg:flex flex-col p-4 border-l border-neutral-900 my-2">
           <h3 className="text-sm font-bold text-neutral-400 mb-4">Chi tiết nội dung</h3>
-          <div className="flex-1 flex items-center justify-center text-neutral-600 text-sm border-2 border-dashed border-neutral-800 rounded-lg px-4 text-center">
-            Chọn một bài hát, album hoặc video để xem chi tiết ở đây.
-          </div>
+          <SongDetailPanel />
         </aside>
       </div>
 

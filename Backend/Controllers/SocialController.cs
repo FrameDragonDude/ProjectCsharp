@@ -1,10 +1,11 @@
-﻿using Backend.Data;
+using Backend.Data;
 using Backend.Hubs;
 using Backend.Services;
 using Backend.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.Authorization;
+
 
 namespace Backend.Controllers;
 

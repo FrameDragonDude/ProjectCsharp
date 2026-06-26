@@ -32,15 +32,19 @@ function App() {
         </Route>
         
         <Route element={<MainLayout />}>
+<<<<<<< HEAD
 
+=======
+          {/* Public Routes */}
+          <Route path="/" element={<Home />} />
+>>>>>>> 1e48a6268a9fe5ffecd358378fc42ee3639a0389
           <Route path="/search" element={<Search />} />
-          <Route path="/playlist/:id" element={<PlaylistDetail />} />
-          <Route path="/album/:id" element={<AlbumDetail />} />
           <Route path="/artist/:id" element={<ArtistDetail />} />
-          <Route path="/video/:id" element={<VideoPlayer />} />
           
           <Route element={<ProtectedRoute />}>
-            <Route path="/" element={<Home />} />
+            <Route path="/playlist/:id" element={<PlaylistDetail />} />
+            <Route path="/album/:id" element={<AlbumDetail />} />
+            <Route path="/video/:id" element={<VideoPlayer />} />
             <Route path="/library" element={<Library />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/profile" element={<Profile />} />

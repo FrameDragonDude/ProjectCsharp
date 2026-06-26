@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { getLibrarySummary, assignMediaToAlbum } from '../../services/api/tuneVaultApi';
+﻿import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { assignMediaToAlbum, getLibrarySummary } from '../../services/api/tuneVaultApi';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import type { Album, MediaItem } from '../../types';
 import { resolveAssetUrl } from '../../utils/resolveAsset';
@@ -16,20 +16,23 @@ export default function AlbumDetail() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const playTrack = usePlayerStore((s) => s.playTrack);
-  // assignMediaToAlbum imported from services above
+  const albumId = id ? String(id) : '';
 
   useEffect(() => {
     if (!id) return;
+
     let mounted = true;
 
     void (async () => {
       setLoading(true);
       try {
         const data = await getLibrarySummary();
-        const found = data.albums.find((a) => a.id === id) ?? null;
-        const albumTracks = data.songs.filter((s) => s.albumId === id);
-        const otherSongs = data.songs.filter((s) => s.albumId !== id);
+        const found = data.albums.find((a) => String(a.id) === albumId) ?? null;
+        const albumTracks = data.songs.filter((s) => String(s.albumId ?? '') === albumId);
+        const otherSongs = data.songs.filter((s) => String(s.albumId ?? '') !== albumId);
+
         if (!mounted) return;
+
         setAlbum(found);
         setTracks(albumTracks);
         setAllSongs(otherSongs);
@@ -43,17 +46,18 @@ export default function AlbumDetail() {
     return () => {
       mounted = false;
     };
-  }, [id]);
+  }, [id, albumId]);
 
-  if (!id) return <div className="p-6 text-white">ID album không hợp lệ.</div>;
-
-  if (loading) return <div className="p-6 text-white">Đang tải...</div>;
+  if (!id) return <div className="p-6 text-white">Album id is invalid.</div>;
+  if (loading) return <div className="p-6 text-white">Dang tai...</div>;
 
   if (!album) {
     return (
       <div className="p-6 text-white">
-        <button onClick={() => navigate(-1)} className="mb-4 text-neutral-300 hover:text-white">Quay lại</button>
-        <div>Không tìm thấy album.</div>
+        <button onClick={() => navigate(-1)} className="mb-4 text-neutral-300 hover:text-white">
+          Quay lai
+        </button>
+        <div>Khong tim thay album.</div>
       </div>
     );
   }
@@ -76,16 +80,17 @@ export default function AlbumDetail() {
           <h1 className="text-3xl font-bold">{album.title}</h1>
           <p className="text-neutral-400 mt-1">{album.artistName}</p>
           <p className="text-neutral-500 mt-2">{album.releaseDate}</p>
+          {album.description && <p className="text-neutral-300 mt-2">{album.description}</p>}
         </div>
       </div>
 
       <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-        <h2 className="text-xl font-bold mb-4">Danh sách bài hát</h2>
+        <h2 className="text-xl font-bold mb-4">Danh sach bai hat</h2>
         <div className="mb-4">
           <div className="flex items-center gap-2">
             <input
               type="search"
-              placeholder="Tìm bài để thêm..."
+              placeholder="Tim bai de them..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="bg-neutral-800 text-white p-2 rounded flex-1"
@@ -96,54 +101,71 @@ export default function AlbumDetail() {
                 if (!selectedSong) return;
                 setAdding(true);
                 try {
-                  await assignMediaToAlbum(id, selectedSong);
+                  await assignMediaToAlbum(albumId, selectedSong);
                   const data = await getLibrarySummary();
-                  setTracks(data.songs.filter((s) => s.albumId === id));
-                  setAllSongs(data.songs.filter((s) => s.albumId !== id));
+                  setTracks(data.songs.filter((s) => String(s.albumId ?? '') === albumId));
+                  setAllSongs(data.songs.filter((s) => String(s.albumId ?? '') !== albumId));
                   setSelectedSong(null);
                   setSearchTerm('');
                 } catch (err) {
                   console.error(err);
-                  const message = (err as any)?.response?.data ?? (err as any)?.message ?? 'Thêm bài vào album thất bại';
+                  const message = (err as any)?.response?.data ?? (err as any)?.message ?? 'Them bai vao album that bai';
                   alert(String(message));
                 } finally {
                   setAdding(false);
                 }
               }}
               className="px-3 py-1 bg-white text-black rounded"
-            >Thêm vào album</button>
+            >
+              Them vao album
+            </button>
           </div>
 
           <div className="mt-2 max-h-48 overflow-auto rounded bg-neutral-900/20">
-            {(allSongs.filter((s) => {
-              if (!searchTerm) return true;
-              const q = searchTerm.toLowerCase();
-              return s.title.toLowerCase().includes(q) || (s.artistName ?? '').toLowerCase().includes(q);
-            }).slice(0, 200)).map((s) => (
-              <div
-                key={s.id}
-                onClick={() => setSelectedSong(s.id)}
-                className={`p-2 cursor-pointer flex items-center justify-between hover:bg-neutral-800/40 ${selectedSong === s.id ? 'bg-neutral-800/60' : ''}`}
-              >
-                <div className="truncate">{s.title} <span className="text-neutral-400">— {s.artistName ?? 'TuneVault'}</span></div>
-                <div className="text-sm text-neutral-400">{s.duration}</div>
-              </div>
-            ))}
+            {allSongs
+              .filter((s) => {
+                if (!searchTerm) return true;
+                const q = searchTerm.toLowerCase();
+                return s.title.toLowerCase().includes(q) || (s.artistName ?? '').toLowerCase().includes(q);
+              })
+              .slice(0, 200)
+              .map((s) => (
+                <div
+                  key={s.id}
+                  onClick={() => setSelectedSong(String(s.id))}
+                  className={`p-2 cursor-pointer flex items-center justify-between hover:bg-neutral-800/40 ${selectedSong === String(s.id) ? 'bg-neutral-800/60' : ''}`}
+                >
+                  <div className="truncate">
+                    {s.title} <span className="text-neutral-400">- {s.artistName ?? 'TuneVault'}</span>
+                  </div>
+                  <div className="text-sm text-neutral-400">{s.duration}</div>
+                </div>
+              ))}
           </div>
-          <div className="mt-1 text-sm text-neutral-400">{selectedSong ? `Đã chọn: ${allSongs.find(a => a.id === selectedSong)?.title ?? selectedSong}` : 'Chưa chọn bài'}</div>
+          <div className="mt-1 text-sm text-neutral-400">
+            {selectedSong ? `Da chon: ${allSongs.find((a) => String(a.id) === selectedSong)?.title ?? selectedSong}` : 'Chua chon bai'}
+          </div>
         </div>
+
         {tracks.length === 0 ? (
-          <div className="text-neutral-400">Không có bài hát trong album này.</div>
+          <div className="text-neutral-400">Khong co bai hat trong album nay.</div>
         ) : (
           <div className="flex flex-col space-y-2">
             {tracks.map((t, idx) => (
               <div key={t.id} className="flex items-center justify-between p-2 rounded hover:bg-neutral-900/40">
                 <div>
-                  <div className="font-medium">{idx + 1}. {t.title}</div>
-                  <div className="text-sm text-neutral-400">{t.artistName ?? 'TuneVault'} • {t.duration}</div>
+                  <div className="font-medium">
+                    {idx + 1}. {t.title}
+                  </div>
+                  <div className="text-sm text-neutral-400">
+                    {t.artistName ?? 'TuneVault'} • {t.duration}
+                  </div>
+                  {t.description && <div className="text-sm text-neutral-500">{t.description}</div>}
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => playTrack(t, tracks)} className="px-3 py-1 bg-white text-black rounded">Phát</button>
+                  <button onClick={() => playTrack(t, tracks)} className="px-3 py-1 bg-white text-black rounded">
+                    Phat
+                  </button>
                 </div>
               </div>
             ))}

@@ -26,16 +26,21 @@ public class MediaItem
     [MaxLength(20)]
     public string MediaType { get; set; } = "Audio"; // Audio or Video
 
-    [Required]
-    public int OwnerId { get; set; } 
+    public int? ArtistId { get; set; }
 
     public int? AlbumId { get; set; }
+
+    [MaxLength(512)]
+    public string? CoverImageUrl { get; set; }
+
+    [Column(TypeName = "LONGTEXT")]
+    public string? Description { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation Properties
-    [ForeignKey("OwnerId")]
-    public virtual User? Owner { get; set; }
+    [ForeignKey("ArtistId")]
+    public virtual Artist? Artist { get; set; }
 
     [ForeignKey("AlbumId")]
     public virtual Album? Album { get; set; }
