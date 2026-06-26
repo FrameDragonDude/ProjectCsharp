@@ -468,22 +468,22 @@ LIMIT 1;";
             reader.GetString("ReleaseDate"));
     }
 
-            public async Task<MediaItemDto?> UpdateMediaCoverAsync(string mediaItemId, string? coverImageUrl, CancellationToken cancellationToken = default)
-            {
-            await using var connection = new MySqlConnection(ConnectionString);
-            await connection.OpenAsync(cancellationToken);
+    public async Task<MediaItemDto?> UpdateMediaCoverAsync(string mediaItemId, string? coverImageUrl, CancellationToken cancellationToken = default)
+    {
+        await using var connection = new MySqlConnection(ConnectionString);
+        await connection.OpenAsync(cancellationToken);
 
-            const string updateSql = @"
+        const string updateSql = @"
         UPDATE MediaItems SET CoverImageUrl = @CoverImageUrl WHERE Id = @Id;";
 
-            await using (var updateCmd = new MySqlCommand(updateSql, connection))
-            {
-                updateCmd.Parameters.AddWithValue("@CoverImageUrl", (object?)coverImageUrl ?? DBNull.Value);
-                updateCmd.Parameters.AddWithValue("@Id", mediaItemId);
+        await using (var updateCmd = new MySqlCommand(updateSql, connection))
+        {
+            updateCmd.Parameters.AddWithValue("@CoverImageUrl", (object?)coverImageUrl ?? DBNull.Value);
+            updateCmd.Parameters.AddWithValue("@Id", mediaItemId);
 
-                var rows = await updateCmd.ExecuteNonQueryAsync(cancellationToken);
-                if (rows == 0) return null;
-            }
+            var rows = await updateCmd.ExecuteNonQueryAsync(cancellationToken);
+            if (rows == 0) return null;
+        }
 
             const string selectSql = @"
         SELECT m.Id, m.Title, m.FilePath, m.Duration, m.MediaType, m.ArtistId AS ArtistId, m.AlbumId, m.Description,
@@ -494,14 +494,14 @@ LIMIT 1;";
         WHERE m.Id = @Id
         LIMIT 1;";
 
-            await using var cmd = new MySqlCommand(selectSql, connection);
-            cmd.Parameters.AddWithValue("@Id", mediaItemId);
+        await using var cmd = new MySqlCommand(selectSql, connection);
+        cmd.Parameters.AddWithValue("@Id", mediaItemId);
 
-            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
-            if (!await reader.ReadAsync(cancellationToken)) return null;
+        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken)) return null;
 
-            return MapMediaItem(reader);
-            }
+        return MapMediaItem(reader);
+    }
 
     public async Task<bool> AssignMediaToAlbumAsync(string albumId, string mediaItemId, CancellationToken cancellationToken = default)
     {
@@ -717,19 +717,9 @@ WHERE UserId = @UserId
             throw new InvalidOperationException("Share exactly one item: MediaItemId or PlaylistId.");
         }
 
+        var createdAt = DateTime.UtcNow;
         var shareId = 0;
         var notificationId = 0;
-        var createdAt = DateTime.Now;
-
-        var payload = JsonSerializer.Serialize(new
-        {
-            ShareId = shareId,
-            SenderUserId = command.SenderUserId,
-            SenderName = command.SenderName,
-            MediaItemId = command.MediaItemId,
-            PlaylistId = command.PlaylistId,
-            Url = "/share-inbox"
-        });
 
         await using var connection = new MySqlConnection(ConnectionString);
         await connection.OpenAsync(cancellationToken);
@@ -738,33 +728,45 @@ WHERE UserId = @UserId
 
         try
         {
+
             const string shareSql = @"
-INSERT INTO MediaShares (Id, SenderUserId, ReceiverUserId, MediaItemId, PlaylistId)
-VALUES (@Id, @SenderUserId, @ReceiverUserId, @MediaItemId, @PlaylistId);";
+            INSERT INTO MediaShares (SenderUserId, ReceiverUserId, MediaItemId, PlaylistId, SharedAt)
+            VALUES (@SenderUserId, @ReceiverUserId, @MediaItemId, @PlaylistId, @SharedAt);
+            SELECT LAST_INSERT_ID();";
 
             await using (var shareCommand = new MySqlCommand(shareSql, connection, transaction))
             {
-                shareCommand.Parameters.AddWithValue("@Id", shareId);
                 shareCommand.Parameters.AddWithValue("@SenderUserId", command.SenderUserId);
                 shareCommand.Parameters.AddWithValue("@ReceiverUserId", command.ReceiverUserId);
                 shareCommand.Parameters.AddWithValue("@MediaItemId", (object?)command.MediaItemId ?? DBNull.Value);
                 shareCommand.Parameters.AddWithValue("@PlaylistId", (object?)command.PlaylistId ?? DBNull.Value);
+                shareCommand.Parameters.AddWithValue("@SharedAt", createdAt);
 
-                await shareCommand.ExecuteNonQueryAsync(cancellationToken);
+                shareId = Convert.ToInt32(await shareCommand.ExecuteScalarAsync(cancellationToken));
             }
 
+            var payload = JsonSerializer.Serialize(new
+            {
+                ShareId = shareId,
+                SenderUserId = command.SenderUserId,
+                SenderName = command.SenderName,
+                MediaItemId = command.MediaItemId,
+                PlaylistId = command.PlaylistId,
+                Url = "/share-inbox"
+            });
+
             const string notificationSql = @"
-INSERT INTO Notifications (Id, UserId, Type, PayloadJson, IsRead, CreatedAt)
-VALUES (@Id, @UserId, 'Share', @PayloadJson, 0, @CreatedAt);";
+            INSERT INTO Notifications (UserId, Type, PayloadJson, IsRead, CreatedAt)
+            VALUES (@UserId, 'Share', @PayloadJson, 0, @CreatedAt);
+            SELECT LAST_INSERT_ID();";
 
             await using (var notificationCommand = new MySqlCommand(notificationSql, connection, transaction))
             {
-                notificationCommand.Parameters.AddWithValue("@Id", notificationId);
                 notificationCommand.Parameters.AddWithValue("@UserId", command.ReceiverUserId);
                 notificationCommand.Parameters.AddWithValue("@PayloadJson", payload);
                 notificationCommand.Parameters.AddWithValue("@CreatedAt", createdAt);
 
-                await notificationCommand.ExecuteNonQueryAsync(cancellationToken);
+                notificationId = Convert.ToInt32(await notificationCommand.ExecuteScalarAsync(cancellationToken));
             }
 
             await transaction.CommitAsync(cancellationToken);
@@ -850,10 +852,10 @@ LIMIT @Limit;";
         await connection.OpenAsync(cancellationToken);
 
         const string sql = @"
-        SELECT Id, UserId, Type, PayloadJson, IsRead, CreatedAt
-        FROM Notifications
-        WHERE UserId = @UserId
-        ORDER BY CreatedAt DESC LIMIT 50; ";
+    SELECT Id, UserId, Type, PayloadJson, IsRead, CreatedAt
+    FROM Notifications
+    WHERE UserId = @UserId
+    ORDER BY CreatedAt DESC LIMIT 50; ";
 
         await using var command = new MySqlCommand(sql, connection);
         command.Parameters.AddWithValue("@UserId", int.Parse(userId, System.Globalization.CultureInfo.InvariantCulture));
@@ -862,13 +864,17 @@ LIMIT @Limit;";
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
-            items.Add( new NotificationDto( 
+
+            var dbDateTime = reader.GetDateTime("CreatedAt");
+            var utcDateTime = DateTime.SpecifyKind(dbDateTime, DateTimeKind.Utc);
+
+            items.Add(new NotificationDto(
                 reader.GetInt32(reader.GetOrdinal("Id")),
                 reader.GetInt32(reader.GetOrdinal("UserId")),
                 reader.GetString("Type"),
                 reader.GetString("PayloadJson"),
                 reader.GetBoolean("IsRead"),
-                reader.GetDateTime("CreatedAt")
+                utcDateTime
             ));
         }
         return items;
@@ -892,17 +898,17 @@ LIMIT @Limit;";
     {
         await using var connection = new MySqlConnection(ConnectionString);
         await connection.OpenAsync(cancellationToken);
-        
+
         const string sql = @"
         UPDATE Notifications SET IsRead = 1 WHERE UserId = @UserId AND IsRead = 0;";
 
         await using var command = new MySqlCommand(sql, connection);
         command.Parameters.AddWithValue("@UserId", int.Parse(userId, System.Globalization.CultureInfo.InvariantCulture));
-        await command. ExecuteNonQueryAsync(cancellationToken);
-        
+        await command.ExecuteNonQueryAsync(cancellationToken);
+
     }
 
-    public async Task<IReadOnlyList<PlayHistoryDto>> GetRecentPlayHistoriesAsync(string userId, int limit = 10, CancellationToken cancellationToken = default )
+    public async Task<IReadOnlyList<PlayHistoryDto>> GetRecentPlayHistoriesAsync(string userId, int limit = 10, CancellationToken cancellationToken = default)
     {
         await using var connection = new MySqlConnection(ConnectionString);
         await connection.OpenAsync(cancellationToken);
@@ -936,7 +942,7 @@ LIMIT @Limit;
 
         var items = new List<PlayHistoryDto>();
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-        while(await reader.ReadAsync(cancellationToken))
+        while (await reader.ReadAsync(cancellationToken))
         {
             items.Add(new PlayHistoryDto(
                 reader.GetInt32(reader.GetOrdinal("Id")),

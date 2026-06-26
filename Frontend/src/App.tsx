@@ -14,8 +14,15 @@ import VideoPlayer from './features/player/VideoPlayer';
 import AlbumDetail from './features/album/AlbumDetail';
 import ArtistDetail from './features/artist/ArtistDetail';
 import ProtectedRoute from './routes/ProtectedRoute';
-
+import { useEffect } from 'react';
 function App() {
+  
+  useEffect(() => {
+    const root = window.document.documentElement;
+    root.classList.add('dark');
+    root.classList.remove('light'); 
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
@@ -25,14 +32,13 @@ function App() {
         </Route>
         
         <Route element={<MainLayout />}>
-          {/* Public Routes */}
+
           <Route path="/search" element={<Search />} />
           <Route path="/playlist/:id" element={<PlaylistDetail />} />
           <Route path="/album/:id" element={<AlbumDetail />} />
           <Route path="/artist/:id" element={<ArtistDetail />} />
           <Route path="/video/:id" element={<VideoPlayer />} />
           
-          {/* Protected Routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<Home />} />
             <Route path="/library" element={<Library />} />
