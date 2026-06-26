@@ -19,6 +19,7 @@ export interface ArtistSummary extends Artist {
 	albumCount: number;
 	trackCount: number;
 	coverImageUrl?: string | null;
+	isFollowing?: boolean;
 }
 
 export interface Album {
@@ -80,7 +81,7 @@ export interface SearchResult {
 	id: string;
 	title: string;
 	subtitle: string;
-	type: 'Song' | 'Video' | 'Album' | 'Playlist';
+	type: 'Song' | 'Video' | 'Album' | 'Playlist' | 'Artist' | 'User';
 	mediaType?: MediaType;
 	albumId?: string | null;
 	filePath?: string;

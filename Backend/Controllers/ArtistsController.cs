@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+using System.Globalization;
+using System.Security.Claims;
 using Backend.Models;
 using Microsoft.AspNetCore.Mvc;
 using MySqlConnector;
@@ -153,6 +154,18 @@ ORDER BY mi.CreatedAt DESC, mi.Title ASC;";
             }
         }
 
+        var isFollowing = false;
+        var myUserIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (int.TryParse(myUserIdValue, out var myUserId))
+        {
+            const string checkFollowSql = "SELECT 1 FROM Follows WHERE FollowerId = @FollowerId AND TargetId = @TargetId AND TargetType = 'Artist' LIMIT 1;";
+            await using var checkFollowCmd = new MySqlCommand(checkFollowSql, connection);
+            checkFollowCmd.Parameters.AddWithValue("@FollowerId", myUserId);
+            checkFollowCmd.Parameters.AddWithValue("@TargetId", id);
+            var result = await checkFollowCmd.ExecuteScalarAsync(cancellationToken);
+            isFollowing = result != null;
+        }
+
         var coverImageUrl = albumDtos
             .Select(album => album.CoverImageUrl)
             .FirstOrDefault(url => !string.IsNullOrWhiteSpace(url))
@@ -162,7 +175,8 @@ ORDER BY mi.CreatedAt DESC, mi.Title ASC;";
         {
             AlbumCount = albumDtos.Count,
             TrackCount = songs.Count,
-            CoverImageUrl = coverImageUrl
+            CoverImageUrl = coverImageUrl,
+            IsFollowing = isFollowing
         };
 
         return Ok(new ArtistDetailDto(summary, albumDtos, songs));

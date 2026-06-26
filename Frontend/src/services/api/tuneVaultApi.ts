@@ -140,6 +140,16 @@ export async function updateProfile(fullName: string, bio: string, avatarUrl: st
   return response.data;
 }
 
+export async function uploadAvatar(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const response = await axiosClient.post('/user/avatar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data.avatarUrl;
+}
+
 export async function toggleFollow(targetId: string, type: 'User' | 'Artist' = 'Artist') {
   const response = await axiosClient.post(`/follow/${targetId}`, null, {
     params: { type },

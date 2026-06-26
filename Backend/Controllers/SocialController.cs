@@ -1,7 +1,8 @@
-﻿using Backend.Data;
+using Backend.Data;
 using Backend.Hubs;
 using Backend.Services;
 using Backend.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 
@@ -9,6 +10,7 @@ namespace Backend.Controllers;
 
 [ApiController]
 [Route("api")]
+[Authorize]
 public sealed class SocialController(
     IMusicCatalogRepository repository,
     IClaudeRecommendationService recommendationService,

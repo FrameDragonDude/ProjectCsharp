@@ -1,4 +1,4 @@
-﻿using Backend.Models;
+using Backend.Models;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

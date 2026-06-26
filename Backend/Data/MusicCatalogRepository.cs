@@ -217,6 +217,55 @@ ORDER BY a.ReleaseDate DESC;";
             }
         }
 
+        const string artistSql = @"
+SELECT Id, Name, AvatarUrl
+FROM Artists
+WHERE (@Query = '' OR Name LIKE CONCAT('%', @Query, '%'))
+ORDER BY Name;";
+
+        await using (var command = new MySqlCommand(artistSql, connection))
+        {
+            command.Parameters.AddWithValue("@Query", normalized);
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                results.Add(new SearchResultDto(
+                    reader.GetInt32(reader.GetOrdinal("Id")),
+                    reader.GetString("Name"),
+                    "Artist",
+                    "Artist",
+                    null,
+                    null,
+                    null,
+                    reader.IsDBNull(reader.GetOrdinal("AvatarUrl")) ? null : reader.GetString("AvatarUrl")));
+            }
+        }
+
+        const string userSql = @"
+SELECT u.Id, u.Username, up.AvatarUrl, up.FullName
+FROM Users u
+LEFT JOIN UserProfiles up ON u.Id = up.UserId
+WHERE (@Query = '' OR u.Username LIKE CONCAT('%', @Query, '%') OR up.FullName LIKE CONCAT('%', @Query, '%'))
+ORDER BY u.Username;";
+
+        await using (var command = new MySqlCommand(userSql, connection))
+        {
+            command.Parameters.AddWithValue("@Query", normalized);
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                results.Add(new SearchResultDto(
+                    reader.GetInt32(reader.GetOrdinal("Id")),
+                    reader.GetString("Username"),
+                    "User",
+                    "User",
+                    null,
+                    null,
+                    null,
+                    reader.IsDBNull(reader.GetOrdinal("AvatarUrl")) ? null : reader.GetString("AvatarUrl")));
+            }
+        }
+
         const string videoSql = @"
 SELECT m.Id, m.Title, m.Duration, m.MediaType, m.FilePath, m.AlbumId,
        COALESCE(m.CoverImageUrl, a.CoverImageUrl) AS CoverImageUrl,
