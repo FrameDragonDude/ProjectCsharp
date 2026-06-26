@@ -17,6 +17,8 @@ public class MediaShare
 
     public int? MediaItemId { get; set; }
     public int? PlaylistId { get; set; }
+    public int? AlbumId{get;set;}
+    public int ? ArtistId{get;set;}
 
     public DateTime SharedAt { get; set; } = DateTime.UtcNow;
 

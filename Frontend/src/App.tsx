@@ -32,12 +32,8 @@ function App() {
         </Route>
         
         <Route element={<MainLayout />}>
-<<<<<<< HEAD
-
-=======
           {/* Public Routes */}
           <Route path="/" element={<Home />} />
->>>>>>> 1e48a6268a9fe5ffecd358378fc42ee3639a0389
           <Route path="/search" element={<Search />} />
           <Route path="/artist/:id" element={<ArtistDetail />} />
           

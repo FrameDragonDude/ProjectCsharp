@@ -35,12 +35,12 @@ export default function ShareInbox() {
   }, [activeTab]);
 
   const getMediaIcon = (type: string, mediaType?: string) => {
-    if (type === "Playlist")
-      return <ListMusic size={20} className="text-green-400" />;
-    if (mediaType === "Video")
-      return <Video size={20} className="text-purple-400" />;
-    return <Music size={20} className="text-blue-400" />;
-  };
+  if (type === "Playlist") return <ListMusic size={20} className="text-green-400" />;
+  if (type === "Album") return <ListMusic size={20} className="text-yellow-400" />;
+  if (type === "Artist") return <Music size={20} className="text-pink-400" />;
+  if (mediaType === "Video") return <Video size={20} className="text-purple-400" />;
+  return <Music size={20} className="text-blue-400" />;
+};
 
   return (
     <div className="p-6 md:p-8 max-w-5xl mx-auto flex flex-col h-full text-white">
