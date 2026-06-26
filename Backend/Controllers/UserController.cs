@@ -71,6 +71,18 @@ namespace Backend.Controllers
             var url = $"/images/avatars/{fileName}";
             return Ok(new { AvatarUrl = url });
         }
+
+        [HttpGet("following")]
+        public async Task<IActionResult> GetFollowing()
+        {
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
+
+            var query = new GetFollowingQuery(userId);
+            var followingList = await _mediator.Send(query);
+
+            return Ok(followingList);
+        }
     }
     public record UpdateProfileRequest(string FullName, string Bio, string AvatarUrl);
 }

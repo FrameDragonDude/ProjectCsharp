@@ -6,14 +6,14 @@ using System.ComponentModel.DataAnnotations;
 namespace Backend.Models
 {
     public sealed record RegisterCommand(
-        [Required(ErrorMessage = "T�n dang nh?p kh�ng du?c d? tr?ng")] string Username,
-        [Required(ErrorMessage = "Email kh�ng du?c d? tr?ng")]
-        [EmailAddress(ErrorMessage = "Email kh�ng d�ng d?nh d?ng! Vui l�ng nh?p l?i.")] string Email,
-        [MinLength(6, ErrorMessage = "M?t kh?u ph?i c� �t nh?t 6 k� t?.")]
+        [Required(ErrorMessage = "Tên đăng nhập không được trống")] string Username,
+        [Required(ErrorMessage = "Email không được để trống")]
+        [EmailAddress(ErrorMessage = "Email không đúng định dạng, vui lòng nhập lại.")] string Email,
+        [MinLength(6, ErrorMessage = "Mật khẩu phải có ít nhất 6 ký tự.")]
         [RegularExpression(@"^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_]).+$",
-            ErrorMessage = "M?t kh?u ph?i bao g?m �t nh?t 1 ch? c�i, 1 ch? s? v� 1 k� t? d?c bi?t.")]
+            ErrorMessage = "Mật khẩu phải bao gồm ít nhất 1 chữ cái, 1 chữ số và 1 ký tự đặc biệt.")]
         string Password,
-        [Required(ErrorMessage = "H? v� t�n kh�ng du?c d? tr?ng")] string FullName
+        [Required(ErrorMessage = "Họ và tên không được để trống")] string FullName
     ) : IRequest<string>;
 
     public class RegisterCommandHandler : IRequestHandler<RegisterCommand, string>
@@ -41,7 +41,7 @@ namespace Backend.Models
                 checkCmd.Parameters.AddWithValue("@Email", request.Email);
                 checkCmd.Parameters.AddWithValue("@Username", request.Username);
                 var exists = await checkCmd.ExecuteScalarAsync(cancellationToken);
-                if (exists != null) throw new Exception("Username ho?c Email d� du?c s? d?ng.");
+                if (exists != null) throw new Exception("Username hoặc Email đã được sử dụng.");
             }
 
             var passwordHash = _passwordHasher.HashPassword(request.Password);
@@ -67,7 +67,7 @@ VALUES (@Username, @Email, @PasswordHash, @RoleId);";
 
                 const string insertProfileSql = @"
 INSERT INTO UserProfiles (UserId, FullName, Bio)
-VALUES (@UserId, @FullName, 'Ch�o m?ng d?n v?i TuneVault!');";
+VALUES (@UserId, @FullName, 'Chào mừng đến với TuneVault!');";
 
                 await using (var profileCmd = new MySqlCommand(insertProfileSql, connection, transaction))
                 {
@@ -122,7 +122,7 @@ VALUES (@UserId, @FullName, 'Ch�o m?ng d?n v?i TuneVault!');";
             await using var reader = await command.ExecuteReaderAsync(cancellationToken);
             if (!await reader.ReadAsync(cancellationToken))
             {
-                throw new Exception("T�i kho?n ho?c m?t kh?u kh�ng ch�nh x�c.");
+                throw new Exception("Tài khoản hoặc mật khẩu không chính xác.");
             }
 
             var id = Convert.ToInt32(reader["Id"]);
@@ -132,7 +132,7 @@ VALUES (@UserId, @FullName, 'Ch�o m?ng d?n v?i TuneVault!');";
 
             if (!_passwordHasher.VerifyPassword(request.Password, dbPasswordHash))
             {
-                throw new Exception("T�i kho?n ho?c m?t kh?u kh�ng ch�nh x�c.");
+                throw new Exception("Tài khoản hoặc mật khẩu không chính xác.");
             }
 
             var user = new User

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Settings, Edit2, MapPin, Link as LinkIcon, User } from 'lucide-react';
 import EditProfileModal from './EditProfileModal';
+import FollowingModal from './FollowingModal';
 import { getProfile, getLibrarySummary } from '../../services/api/tuneVaultApi';
 import { resolveAssetUrl } from '../../utils/resolveAsset';
 import type { Playlist } from '../../types';
@@ -10,6 +11,7 @@ import { Music } from 'lucide-react';
 export default function Profile() {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isFollowingModalOpen, setIsFollowingModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
 
@@ -33,12 +35,14 @@ export default function Profile() {
           getProfile(),
           getLibrarySummary()
         ]);
-        
+
         setUserProfile(prev => ({
           ...prev,
           fullName: data.fullName || '',
           bio: data.bio || '',
           avatarUrl: data.avatarUrl || '',
+          followers: data.followersCount || 0,
+          following: data.followingCount || 0,
           publicPlaylists: libraryData.playlists.filter(p => p.isPublic).length,
         }));
         setPlaylists(libraryData.playlists.filter(p => p.isPublic));
@@ -51,14 +55,11 @@ export default function Profile() {
     fetchProfile();
   }, []);
 
-  // Xóa mock data
 
   return (
     <div className="flex flex-col h-full overflow-y-auto text-white pb-24">
-      {/* Phần Header Profile với Gradient mờ */}
       <div className="bg-gradient-to-b from-neutral-600 to-neutral-900 p-6 md:p-10 flex flex-col md:flex-row items-end space-y-6 md:space-y-0 md:space-x-8 shrink-0">
-        
-        {/* Avatar */}
+
         <div className={`w-40 h-40 md:w-52 md:h-52 rounded-full shadow-2xl flex-shrink-0 flex items-center justify-center ${userProfile.avatarColor} overflow-hidden`}>
           {userProfile.avatarUrl ? (
             <img src={resolveAssetUrl(userProfile.avatarUrl)} alt="Avatar" className="w-full h-full object-cover" />
@@ -66,29 +67,32 @@ export default function Profile() {
             <User size={80} className="text-white/50" />
           )}
         </div>
-        
-        {/* Thông tin chính */}
+
         <div className="flex flex-col flex-1 w-full text-white">
           <span className="text-sm font-semibold uppercase tracking-wider mb-2">Hồ sơ</span>
           <h1 className="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight line-clamp-1">
             {userProfile.fullName}
           </h1>
-          
+
           <div className="flex items-center text-sm font-medium text-neutral-300">
             <span>{userProfile.publicPlaylists} Danh sách phát công khai</span>
             <span className="mx-2">•</span>
             <span className="hover:underline cursor-pointer">{userProfile.followers} Người theo dõi</span>
             <span className="mx-2">•</span>
-            <span className="hover:underline cursor-pointer">Đang theo dõi {userProfile.following}</span>
+            <span
+              className="hover:underline cursor-pointer"
+              onClick={() => setIsFollowingModalOpen(true)}
+            >
+              Đang theo dõi {userProfile.following}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Vùng Action (Nút Chỉnh sửa) và Thông tin Bio */}
       <div className="px-6 md:px-10 py-6">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
-            <button 
+            <button
               className="bg-transparent border border-neutral-500 hover:border-white hover:scale-105 transition px-4 py-1.5 rounded-full text-sm font-bold flex items-center space-x-2"
               onClick={() => setIsEditModalOpen(true)}
             >
@@ -98,7 +102,6 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Cột thông tin chi tiết */}
         {userProfile.bio && (
           <div className="max-w-2xl bg-neutral-800/30 p-4 rounded-lg mb-10 border border-neutral-800">
             <p className="text-neutral-200 text-sm leading-relaxed whitespace-pre-wrap">
@@ -107,7 +110,6 @@ export default function Profile() {
           </div>
         )}
 
-        {/* Danh sách Playlist công khai */}
         {playlists.length > 0 && (
           <div>
             <h2 className="text-2xl font-bold mb-6">Danh sách phát công khai</h2>
@@ -124,7 +126,6 @@ export default function Profile() {
                     ) : (
                       <Music size={40} className="text-neutral-500" />
                     )}
-                    {/* Nút Play hiển thị khi hover */}
                     <div className="absolute bottom-2 right-2 w-10 h-10 bg-green-500 rounded-full items-center justify-center text-black hidden group-hover:flex shadow-xl transform translate-y-2 group-hover:translate-y-0 transition-all">
                       ▶
                     </div>
@@ -137,9 +138,9 @@ export default function Profile() {
           </div>
         )}
       </div>
-      <EditProfileModal 
-        isOpen={isEditModalOpen} 
-        onClose={() => setIsEditModalOpen(false)} 
+      <EditProfileModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
         currentData={{
           fullName: userProfile.fullName,
           bio: userProfile.bio,
@@ -153,6 +154,10 @@ export default function Profile() {
             avatarUrl: updatedData.avatarUrl
           }));
         }}
+      />
+      <FollowingModal
+        isOpen={isFollowingModalOpen}
+        onClose={() => setIsFollowingModalOpen(false)}
       />
     </div>
   );
