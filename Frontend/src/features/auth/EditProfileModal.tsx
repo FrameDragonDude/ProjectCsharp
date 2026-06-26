@@ -1,5 +1,7 @@
-import { useState } from 'react';
-import { X, Camera, Save } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Camera, Save, Loader2 } from 'lucide-react';
+import { updateProfile, uploadAvatar } from '../../services/api/tuneVaultApi';
+import { resolveAssetUrl } from '../../utils/resolveAsset';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -10,14 +12,24 @@ interface EditProfileModalProps {
     bio: string;
     avatarUrl?: string;
   };
+  onSaveSuccess: (updatedData: { fullName: string; bio: string; avatarUrl: string }) => void;
 }
 
-export default function EditProfileModal({ isOpen, onClose, currentData }: EditProfileModalProps) {
+export default function EditProfileModal({ isOpen, onClose, currentData, onSaveSuccess }: EditProfileModalProps) {
   // Khởi tạo state dựa trên dữ liệu thật từ bảng UserProfiles
   const [fullName, setFullName] = useState(currentData.fullName);
   const [bio, setBio] = useState(currentData.bio);
   const [avatarUrl, setAvatarUrl] = useState(currentData.avatarUrl || '');
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Cập nhật state khi currentData thay đổi (ví dụ khi API vừa trả về)
+  useEffect(() => {
+    setFullName(currentData.fullName);
+    setBio(currentData.bio);
+    setAvatarUrl(currentData.avatarUrl || '');
+  }, [currentData, isOpen]);
 
   if (!isOpen) return null;
 
@@ -26,17 +38,30 @@ export default function EditProfileModal({ isOpen, onClose, currentData }: EditP
     setIsLoading(true);
 
     try {
-      // TODO: Thay thế bằng lệnh gọi API thực tế tới Backend (UPDATE UserProfiles)
-      // payload: { fullName, bio, avatarUrl }
-      await new Promise(resolve => setTimeout(resolve, 800)); // Giả lập delay mạng
-      
-      console.log('Dữ liệu chuẩn bị gửi đi:', { fullName, bio, avatarUrl });
+      await updateProfile(fullName, bio, avatarUrl);
       alert('Cập nhật hồ sơ thành công!');
+      onSaveSuccess({ fullName, bio, avatarUrl });
       onClose();
     } catch (error) {
       console.error('Lỗi khi cập nhật:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const url = await uploadAvatar(file);
+      setAvatarUrl(url);
+    } catch (error) {
+      console.error('Lỗi khi tải ảnh lên:', error);
+      alert('Không thể tải ảnh lên. Vui lòng thử lại sau.');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -59,12 +84,16 @@ export default function EditProfileModal({ isOpen, onClose, currentData }: EditP
         {/* Modal Body (Form) */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           
-          {/* Vùng sửa Avatar */}
           <div className="flex flex-col items-center justify-center space-y-4">
-            <div className="relative group cursor-pointer">
+            <div 
+              className="relative group cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+            >
               <div className="w-32 h-32 rounded-full bg-neutral-800 border-2 border-neutral-700 overflow-hidden flex items-center justify-center">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                {isUploading ? (
+                  <Loader2 className="w-8 h-8 animate-spin text-white" />
+                ) : avatarUrl ? (
+                  <img src={resolveAssetUrl(avatarUrl)} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-4xl">👨‍💻</span>
                 )}
@@ -75,6 +104,15 @@ export default function EditProfileModal({ isOpen, onClose, currentData }: EditP
                 <span className="text-xs font-semibold text-white">Chọn ảnh</span>
               </div>
             </div>
+            
+            <input 
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/*"
+              className="hidden"
+            />
+
             {/* Input phụ để nhập URL tạm thời (Trong thực tế bạn sẽ dùng file input) */}
             <input 
               type="text" 

@@ -1,6 +1,7 @@
-﻿using Backend.Domain.Entities;
+using Backend.Domain.Entities;
 using Backend.Infrastructure.Data;
 using Backend.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ namespace Backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class PlaylistsController : ControllerBase
 {
     private readonly TuneVaultDbContext _context;

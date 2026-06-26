@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using MySqlConnector;
 using System.ComponentModel.DataAnnotations;
 

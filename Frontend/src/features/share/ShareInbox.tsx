@@ -15,16 +15,10 @@ export default function ShareInbox() {
   const [activeTab, setActiveTab] = useState<'inbox' | 'sent'>('inbox');
 
   // Dữ liệu mẫu: Được chia sẻ với tôi
-  const mockInbox: SharedItem[] = [
-    { id: '1', mediaType: 'playlist', mediaTitle: 'Nhạc code đêm khuya', user: 'Tuấn Ngọc', time: '2 giờ trước', message: 'Nghe thử list này đi, code mượt lắm!' },
-    { id: '2', mediaType: 'audio', mediaTitle: 'Noi Dau Muon Mang', user: 'Hải Đăng', time: 'Hôm qua' },
-    { id: '3', mediaType: 'video', mediaTitle: 'Demo Project C#', user: 'Lan Anh', time: '3 ngày trước', message: 'Phần thuyết trình nhóm mình nè.' },
-  ];
+  const mockInbox: SharedItem[] = [];
 
   // Dữ liệu mẫu: Tôi đã chia sẻ
-  const mockSent: SharedItem[] = [
-    { id: '4', mediaType: 'audio', mediaTitle: 'Lofi Chill', user: 'Nhóm trưởng', time: '1 tuần trước' },
-  ];
+  const mockSent: SharedItem[] = [];
 
   const currentData = activeTab === 'inbox' ? mockInbox : mockSent;
 

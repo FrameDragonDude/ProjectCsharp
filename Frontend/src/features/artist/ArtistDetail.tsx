@@ -5,11 +5,13 @@ import { getArtistById, toggleFollow } from '../../services/api/tuneVaultApi';
 import type { ArtistDetail, Album as AlbumType, MediaItem } from '../../types';
 import { resolveAssetUrl } from '../../utils/resolveAsset';
 import { usePlayerStore } from '../../store/usePlayerStore';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export default function ArtistDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const playTrack = usePlayerStore((state) => state.playTrack);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [data, setData] = useState<ArtistDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -40,13 +42,23 @@ export default function ArtistDetailPage() {
       mounted = false;
     };
   }, [id]);
+  useEffect(() => {
+    if (data?.artist?.isFollowing !== undefined) {
+      setIsFollowing(data.artist.isFollowing);
+    }
+  }, [data]);
 
   const handleFollowToggle = async () => {
     try {
       await toggleFollow(id!, 'Artist');
       setIsFollowing(prev => !prev);
-    } catch (err) {
-      console.error('Lỗi khi thao tác theo dõi', err);
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        alert('Vui lòng đăng nhập để theo dõi nghệ sĩ.');
+      } else {
+        console.error('Lỗi khi thao tác theo dõi', err);
+        alert('Có lỗi xảy ra khi thực hiện tác vụ này.');
+      }
     }
   };
 
@@ -115,18 +127,20 @@ export default function ArtistDetailPage() {
             <p className="max-w-3xl text-neutral-300">
               {artist.bio ?? 'Chưa có mô tả cho nghệ sĩ này.'}
             </p>
-            <div className="pt-2">
-              <button 
-                onClick={handleFollowToggle}
-                className={`px-6 py-2 rounded-full font-bold text-sm transition-colors border ${
-                  isFollowing 
-                    ? 'bg-transparent border-white text-white hover:border-neutral-400 hover:text-neutral-400' 
-                    : 'bg-white border-transparent text-black hover:bg-neutral-200'
-                }`}
-              >
-                {isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
-              </button>
-            </div>
+            {isAuthenticated && (
+              <div className="pt-2">
+                <button 
+                  onClick={handleFollowToggle}
+                  className={`px-6 py-2 rounded-full font-bold text-sm transition-colors border ${
+                    isFollowing 
+                      ? 'bg-transparent border-white text-white hover:border-neutral-400 hover:text-neutral-400' 
+                      : 'bg-white border-transparent text-black hover:bg-neutral-200'
+                  }`}
+                >
+                  {isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-3 text-sm text-neutral-300">

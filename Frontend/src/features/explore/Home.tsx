@@ -20,7 +20,8 @@ export default function Home() {
   const [recentSongs, setRecentSongs] = useState<PlayHistory[]>([]);
   const playTrack = usePlayerStore((state) => state.playTrack);
   const openVideo = usePlayerStore((state) => state.openVideo);
-  const currentUser = useAuthStore((state) => state.user?.id ?? 2);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const currentUser = useAuthStore((state) => state.user?.id);
 
   useEffect(() => {
     let mounted = true;
@@ -43,13 +44,15 @@ export default function Home() {
       }
     })();
 
-    void getRecentPlayHistories(currentUser)
-      .then((data) => {
-        if (mounted) {
-          setRecentSongs(data.slice(0, 20));
-        }
-      })
-      .catch((err) => console.error('Loi lay lich su nghe nhac:', err));
+    if (isAuthenticated && currentUser) {
+      void getRecentPlayHistories(currentUser)
+        .then((data) => {
+          if (mounted) {
+            setRecentSongs(data.slice(0, 20));
+          }
+        })
+        .catch((err) => console.error('Loi lay lich su nghe nhac:', err));
+    }
 
     return () => {
       mounted = false;
@@ -128,57 +131,59 @@ export default function Home() {
         )}
       </section>
 
-      <section className="space-y-4">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-neutral-400 mb-2">Nghe gần đây</p>
-            <h2 className="text-2xl md:text-3xl font-bold">Nhạc bạn vừa nghe</h2>
+      {isAuthenticated && (
+        <section className="space-y-4">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-sm uppercase tracking-[0.25em] text-neutral-400 mb-2">Nghe gần đây</p>
+              <h2 className="text-2xl md:text-3xl font-bold">Nhạc bạn vừa nghe</h2>
+            </div>
+            <span className="text-sm text-neutral-400">Tối đa 20 bài</span>
           </div>
-          <span className="text-sm text-neutral-400">Tối đa 20 bài</span>
-        </div>
 
-        {loading ? (
-          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">Đang tải dữ liệu...</div>
-        ) : recentSongs.length === 0 ? (
-          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">
-            Chưa có lịch sử nghe gần đây.
-          </div>
-        ) : (
-          <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
-            {recentSongs.map((song) => {
-              const coverUrl = song.coverImageUrl
-                ? resolveAssetUrl(song.coverImageUrl)
-                : resolveAssetUrl('default-cover.svg');
+          {loading ? (
+            <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">Đang tải dữ liệu...</div>
+          ) : recentSongs.length === 0 ? (
+            <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">
+              Chưa có lịch sử nghe gần đây.
+            </div>
+          ) : (
+            <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
+              {recentSongs.map((song) => {
+                const coverUrl = song.coverImageUrl
+                  ? resolveAssetUrl(song.coverImageUrl)
+                  : resolveAssetUrl('default-cover.svg');
 
-              return (
-                <button
-                  key={song.id}
-                  type="button"
-                  onClick={() => {
-                    const matchingSong = songs.find((s) => s.id === song.mediaItemId);
-                    if (matchingSong) {
-                      playTrack(matchingSong, songs);
-                    }
-                  }}
-                  className="min-w-[180px] max-w-[180px] shrink-0 text-left rounded-2xl border border-white/5 bg-neutral-950/70 p-4 hover:bg-neutral-950 transition snap-start"
-                >
-                  <img
-                    src={coverUrl}
-                    alt="cover"
-                    className="w-full aspect-square object-cover rounded-xl mb-3 shadow-lg"
-                  />
-                  <h3 className="font-semibold truncate">
-                    {song.mediaTitle || `Bài hát ${song.mediaItemId.substring(0, 4)}`}
-                  </h3>
-                  <p className="text-sm text-neutral-400 truncate">
-                    {song.artistName ?? 'TuneVault'}
-                  </p>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </section>
+                return (
+                  <button
+                    key={song.id}
+                    type="button"
+                    onClick={() => {
+                      const matchingSong = songs.find((s) => s.id === song.mediaItemId);
+                      if (matchingSong) {
+                        playTrack(matchingSong, songs);
+                      }
+                    }}
+                    className="min-w-[180px] max-w-[180px] shrink-0 text-left rounded-2xl border border-white/5 bg-neutral-950/70 p-4 hover:bg-neutral-950 transition snap-start"
+                  >
+                    <img
+                      src={coverUrl}
+                      alt="cover"
+                      className="w-full aspect-square object-cover rounded-xl mb-3 shadow-lg"
+                    />
+                    <h3 className="font-semibold truncate">
+                      {song.mediaTitle || `Bài hát ${song.mediaItemId.substring(0, 4)}`}
+                    </h3>
+                    <p className="text-sm text-neutral-400 truncate">
+                      {song.artistName ?? 'TuneVault'}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
 
       <section className="space-y-4">
         <div className="flex items-end justify-between gap-4">

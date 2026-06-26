@@ -29,7 +29,8 @@ public sealed record ArtistSummaryDto(
     string? AvatarUrl,
     int AlbumCount,
     int TrackCount,
-    string? CoverImageUrl);
+    string? CoverImageUrl,
+    bool IsFollowing = false);
 
 public sealed record ArtistDetailDto(
     ArtistSummaryDto Artist,

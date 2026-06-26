@@ -1,5 +1,6 @@
 using Backend.Data;
 using Backend.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers;
@@ -47,6 +48,7 @@ public class CatalogController(IMusicCatalogRepository repository) : ControllerB
     }
 
     [HttpPost("playlists")]
+    [Authorize]
     public async Task<ActionResult<PlaylistDto>> CreatePlaylist([FromBody] CreatePlaylistRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Name))
@@ -59,6 +61,7 @@ public class CatalogController(IMusicCatalogRepository repository) : ControllerB
     }
 
     [HttpPost("albums")]
+    [Authorize]
     public async Task<ActionResult<AlbumDto>> CreateAlbum([FromBody] CreateAlbumRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Title))
@@ -71,6 +74,7 @@ public class CatalogController(IMusicCatalogRepository repository) : ControllerB
     }
 
     [HttpPatch("albums/{id}/cover")]
+    [Authorize]
     public async Task<ActionResult<AlbumDto>> UpdateAlbumCover(string id, [FromBody] UpdateAlbumCoverRequest request, CancellationToken cancellationToken)
     {
         var updated = await repository.UpdateAlbumCoverAsync(id, request.CoverImageUrl, cancellationToken);
@@ -78,6 +82,7 @@ public class CatalogController(IMusicCatalogRepository repository) : ControllerB
     }
 
     [HttpPatch("media/{id}/cover")]
+    [Authorize]
     public async Task<ActionResult<MediaItemDto>> UpdateMediaCover(string id, [FromBody] UpdateAlbumCoverRequest request, CancellationToken cancellationToken)
     {
         var updated = await repository.UpdateMediaCoverAsync(id, request.CoverImageUrl, cancellationToken);
@@ -85,6 +90,7 @@ public class CatalogController(IMusicCatalogRepository repository) : ControllerB
     }
 
     [HttpPost("playlists/{playlistId}/tracks")]
+    [Authorize]
     public async Task<IActionResult> AddTrack(string playlistId, [FromBody] AddTrackRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.MediaItemId))
@@ -97,6 +103,7 @@ public class CatalogController(IMusicCatalogRepository repository) : ControllerB
     }
 
     [HttpPost("albums/{albumId}/tracks")]
+    [Authorize]
     public async Task<IActionResult> AddTrackToAlbum(string albumId, [FromBody] AddTrackRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.MediaItemId))

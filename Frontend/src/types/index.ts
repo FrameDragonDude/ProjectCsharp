@@ -19,6 +19,7 @@ export interface ArtistSummary extends Artist {
 	albumCount: number;
 	trackCount: number;
 	coverImageUrl?: string | null;
+	isFollowing?: boolean;
 }
 
 export interface Album {
