@@ -81,7 +81,7 @@ export interface SearchResult {
 	id: string;
 	title: string;
 	subtitle: string;
-	type: 'Song' | 'Video' | 'Album' | 'Playlist';
+	type: 'Song' | 'Video' | 'Album' | 'Playlist' | 'Artist' | 'User';
 	mediaType?: MediaType;
 	albumId?: string | null;
 	filePath?: string;

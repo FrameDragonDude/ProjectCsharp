@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Album, ArrowLeft, ListMusic, Play, Search as SearchIcon, Video } from 'lucide-react';
+import { Album, ArrowLeft, ListMusic, Mic, Play, Search as SearchIcon, User, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getLibrarySummary, getVideoItems, searchCatalog } from '../../services/api/tuneVaultApi';
 import { resolveAssetUrl } from '../../utils/resolveAsset';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import type { Album as AlbumType, MediaItem, Playlist as PlaylistType, SearchResult } from '../../types';
 
-type BrowseCategory = 'Song' | 'Video' | 'Album' | 'Playlist';
+type BrowseCategory = 'Song' | 'Video' | 'Album' | 'Playlist' | 'Artist' | 'User';
 
 const categoryMeta: Record<
   BrowseCategory,
@@ -35,6 +35,18 @@ const categoryMeta: Record<
     icon: ListMusic,
     color: 'from-emerald-600 to-lime-500',
     emptyMessage: 'Chưa có playlist nào.',
+  },
+  Artist: {
+    title: 'Nghệ sĩ',
+    icon: Mic,
+    color: 'from-pink-600 to-rose-500',
+    emptyMessage: 'Chưa có nghệ sĩ nào.',
+  },
+  User: {
+    title: 'Người dùng',
+    icon: User,
+    color: 'from-indigo-600 to-violet-500',
+    emptyMessage: 'Chưa có người dùng nào.',
   },
 };
 
@@ -97,6 +109,8 @@ export default function Search() {
       videos: results.filter((item) => item.type === 'Video'),
       albums: results.filter((item) => item.type === 'Album'),
       playlists: results.filter((item) => item.type === 'Playlist'),
+      artists: results.filter((item) => item.type === 'Artist'),
+      users: results.filter((item) => item.type === 'User'),
     };
   }, [results]);
 
@@ -104,7 +118,9 @@ export default function Search() {
     groupedResults.songs.length > 0 ||
     groupedResults.videos.length > 0 ||
     groupedResults.albums.length > 0 ||
-    groupedResults.playlists.length > 0;
+    groupedResults.playlists.length > 0 ||
+    groupedResults.artists.length > 0 ||
+    groupedResults.users.length > 0;
 
   const browseCategories: BrowseCategory[] = ['Song', 'Album', 'Video', 'Playlist'];
 
@@ -390,6 +406,64 @@ export default function Search() {
             ) : !hasAnyResults ? (
               <div className="text-center text-neutral-400 mt-10">Không tìm thấy kết quả nào cho "{searchQuery}"</div>
             ) : null}
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold mb-4 text-white">Nghệ sĩ</h2>
+            {loading ? (
+              <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">Đang tải dữ liệu...</div>
+            ) : groupedResults.artists.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                {groupedResults.artists.map((artist) => (
+                  <Link
+                    key={artist.id}
+                    to={`/artist/${artist.id}`}
+                    className="rounded-2xl border border-white/5 bg-neutral-950/60 p-4 hover:bg-neutral-950 transition block"
+                  >
+                    <div className="aspect-square rounded-xl bg-neutral-800 overflow-hidden mb-4 flex items-center justify-center text-neutral-400">
+                      {artist.coverImageUrl ? (
+                        <img src={resolveAssetUrl(artist.coverImageUrl)} alt={artist.title} className="h-full w-full object-cover" />
+                      ) : (
+                        <Mic size={42} />
+                      )}
+                    </div>
+                    <p className="text-lg font-semibold truncate">{artist.title}</p>
+                    <p className="text-sm text-neutral-400 truncate">{artist.subtitle}</p>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-neutral-400 mt-10">Không có nghệ sĩ nào khớp với từ khóa này.</div>
+            )}
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold mb-4 text-white">Người dùng</h2>
+            {loading ? (
+              <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">Đang tải dữ liệu...</div>
+            ) : groupedResults.users.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                {groupedResults.users.map((user) => (
+                  <Link
+                    key={user.id}
+                    to={`/user/${user.id}`}
+                    className="rounded-2xl border border-white/5 bg-neutral-950/60 p-4 hover:bg-neutral-950 transition block"
+                  >
+                    <div className="aspect-square rounded-xl bg-neutral-800 overflow-hidden mb-4 flex items-center justify-center text-neutral-400">
+                      {user.coverImageUrl ? (
+                        <img src={resolveAssetUrl(user.coverImageUrl)} alt={user.title} className="h-full w-full object-cover" />
+                      ) : (
+                        <User size={42} />
+                      )}
+                    </div>
+                    <p className="text-lg font-semibold truncate">{user.title}</p>
+                    <p className="text-sm text-neutral-400 truncate">{user.subtitle}</p>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-neutral-400 mt-10">Không có người dùng nào khớp với từ khóa này.</div>
+            )}
           </section>
 
           <section>
