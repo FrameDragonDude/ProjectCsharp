@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-using Backend.Models;
-=======
-﻿using Backend.Services;
->>>>>>> 3a33a33 (Chinh loi sua mat khau)
+﻿﻿using Backend.Services;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

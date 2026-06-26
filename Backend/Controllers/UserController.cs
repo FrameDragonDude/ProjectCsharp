@@ -3,8 +3,6 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Backend.Services;
-using Microsoft.AspNetCore.Http; 
-using System.IO; 
 
 namespace Backend.Controllers
 {

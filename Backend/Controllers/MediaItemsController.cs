@@ -131,10 +131,18 @@ public class MediaItemsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteMediaItem(int id)
     {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
+
         var item = await _context.MediaItems.FindAsync(id);
         if (item == null) return NotFound();
 
-        // Delete physical file
+        bool isAdmin = User.IsInRole("Admin");
+        if (!isAdmin && item.ArtistId != userId)
+        {
+            return StatusCode(403, new { message = "Bạn không có quyền xóa nhạc của người khác!" });
+        }
+
         var absolutePath = Path.Combine(Directory.GetCurrentDirectory(), item.FilePath.TrimStart('/'));
         if (System.IO.File.Exists(absolutePath))
         {
