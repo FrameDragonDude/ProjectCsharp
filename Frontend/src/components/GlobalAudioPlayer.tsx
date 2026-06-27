@@ -43,7 +43,7 @@ export default function GlobalAudioPlayer() {
       audio.removeEventListener('pause', onPause);
       audio.removeEventListener('ended', onEnded);
     };
-  }, [setProgress, setDuration]);
+  }, [setProgress, setDuration, next, pause, resume]);
 
   // Sync store.progress -> audio.currentTime to support seeking from UI
   useEffect(() => {

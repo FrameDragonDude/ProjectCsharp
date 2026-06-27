@@ -1,10 +1,6 @@
 import { create } from 'zustand';
 import type { MediaItem } from '../types';
-import { useAuthStore } from './useAuthStore';
 import { recordPlayHistory as recordPlayHistoryApi } from '../services/api/tuneVaultApi';
-import { getUserIdFromToken } from '../utils/authUtils';
-
-const fallbackUserId = '2';
 
 const recordPlayHistory = (mediaItemId: string) => {
 	void recordPlayHistoryApi(mediaItemId).catch((error) => {
