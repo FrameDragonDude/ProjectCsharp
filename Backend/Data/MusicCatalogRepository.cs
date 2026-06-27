@@ -323,7 +323,7 @@ ORDER BY p.CreatedAt DESC;";
                 results.Add(new SearchResultDto(
                     reader.GetInt32(reader.GetOrdinal("Id")),
                     reader.GetString("Name"),
-                    $"{reader.GetString("TrackCount")} bài hát",
+                    $"{reader.GetInt64(reader.GetOrdinal("TrackCount"))} bài hát",
                     "Playlist",
                     null,
                     null,
