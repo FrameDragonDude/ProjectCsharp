@@ -25,7 +25,7 @@ jobs:
 
       - name: Build frontend application
         working-directory: ./Frontend
-        run: npm run build
+        run: NODE_OPTIONS=--max-old-space-size=4096 npm run build
 
       # ---------- ĐẨY FRONTEND LÊN NETLIFY ----------
       - name: Deploy to Netlify
