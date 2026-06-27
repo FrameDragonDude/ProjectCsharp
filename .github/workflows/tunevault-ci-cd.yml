@@ -23,15 +23,11 @@ jobs:
         working-directory: ./Frontend
         run: npm install
 
-      - name: Compile with TypeScript
+      - name: Build frontend application
         working-directory: ./Frontend
-        run: npx tsc -b --verbose
+        run: npm run build
 
-      - name: Build with Vite
-        working-directory: ./Frontend
-        run: NODE_OPTIONS=--max-old-space-size=4096 npx vite build --debug
-
-      #ĐẨY FRONTEND LÊN NETLIFY 
+      # ĐẨY FRONTEND LÊN NETLIFY 
       - name: Deploy to Netlify
         uses: nwtgck/actions-netlify@v3
         with:
@@ -39,11 +35,11 @@ jobs:
           production-branch: main
           deploy-message: "Deploy from GitHub Actions: ${{ github.event.head_commit.message }}"
         env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }} # Sửa cú pháp secrets
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}       # Sửa cú pháp secrets
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         timeout-minutes: 5 # Tăng lên 5 phút cho an toàn đường truyền
 
-      #KÍCH HOẠT BACKEND LÊN RENDER
+      # KÍCH HOẠT BACKEND LÊN RENDER
       - name: Trigger Render Webhook to Deploy Backend
         run: |
           curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
