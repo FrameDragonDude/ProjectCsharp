@@ -1,5 +1,6 @@
-import {create} from 'zustand';
+import { create } from 'zustand';
 import * as signalR from '@microsoft/signalr';
+import axiosClient from '../services/api/axiosClient'; // Import Trạm gác vào đây
 
 export interface NotificationItem {
     id: string;
@@ -14,78 +15,81 @@ interface NotificationStore {
     notifications: NotificationItem[];
     unreadCount: number;
     connection: signalR.HubConnection | null;
-    fetchNotifications: (userId: string) => Promise<void>;
+    // Xóa toàn bộ tham số userId đi
+    fetchNotifications: () => Promise<void>;
     markAsRead: (id: string) => Promise<void>;
-    markAllAsRead: (userId: string) => Promise<void>;
-    connectSignalR: (userId: string) => void ;
+    markAllAsRead: () => Promise<void>;
+    connectSignalR: () => void;
 }
 
-const API_BASE_URL = 'http://localhost:5000/api';
-
-export const useNotificationStore = create<NotificationStore>((set,get) => ({
+export const useNotificationStore = create<NotificationStore>((set, get) => ({
     notifications: [],
     unreadCount: 0,
     connection: null,
 
-    fetchNotifications: async (userId: string) => {
-        try{
-            const res = await fetch (`${API_BASE_URL}/notifications?userId=${userId}`);
-            const data: NotificationItem[] = await res.json();
-            set ({
+    fetchNotifications: async () => {
+        try {
+            // Dùng axiosClient thay cho fetch chay
+            const res = await axiosClient.get('/social/notifications');
+            const data: NotificationItem[] = res.data;
+            set({
                 notifications: data,
                 unreadCount: data.filter(n => !n.isRead).length
             });
-        } catch (error){
+        } catch (error) {
             console.error("Lỗi lấy thông báo:", error);
         }
     },
 
     markAsRead: async (id: string) => {
-        try{
-            await fetch(`${API_BASE_URL}/notifications/${id}/read`,{method:'PATCH'});
-            const currentNotifications = get().notifications.map( n =>
-                n.id === id ? {...n, isRead: true} : n
+        try {
+            await axiosClient.patch(`/notifications/${id}/read`);
+            const currentNotifications = get().notifications.map(n =>
+                n.id === id ? { ...n, isRead: true } : n
             );
             set({
                 notifications: currentNotifications,
                 unreadCount: currentNotifications.filter(n => !n.isRead).length
             });
-        }catch(error){
+        } catch (error) {
             console.error("Lỗi đánh dấu đã đọc:", error);
         }
     },
 
-    markAllAsRead: async (userId: string) => {
-        try{
-            await fetch(`${API_BASE_URL}/notifications/read-all?userId=${userId}`,{method: 'PATCH'});
-            const currenctNotifications = get().notifications.map(n => ({...n, isRead: true}));
-            set({notifications: currenctNotifications, unreadCount: 0});
-        } catch (error){
-            console.error("Lỗi đánh dấu đã đọc:", error);
+    markAllAsRead: async () => {
+        try {
+            await axiosClient.patch('/notifications/read-all');
+            const currentNotifications = get().notifications.map(n => ({ ...n, isRead: true }));
+            set({ notifications: currentNotifications, unreadCount: 0 });
+        } catch (error) {
+            console.error("Lỗi đánh dấu tất cả đã đọc:", error);
         }
     },
 
-    connectSignalR: (userId: string) => {
+    connectSignalR: () => {
         if (get().connection) return;
 
+        const token = localStorage.getItem('tunevault_token');
+        if (!token) return; // Không có token thì cấm kết nối
+
         const newCon = new signalR.HubConnectionBuilder()
-            .withUrl("http://localhost:5000/hubs/notifications")
+            .withUrl("http://localhost:5000/hubs/notifications", {
+                accessTokenFactory: () => token // Gửi vé Token cho Hub bảo mật
+            })
             .withAutomaticReconnect()
             .build();
 
-        newCon.start().then(() => {
-            newCon.invoke("JoinUserGroup",userId).catch(console.error);
-        });
+        newCon.start().catch(console.error);
 
-        newCon.on("NotificationReceived",(notification: NotificationItem) => {
-            const {notifications} = get();
+        newCon.on("NotificationReceived", (notification: NotificationItem) => {
+            const { notifications } = get();
             const updated = [notification, ...notifications];
             set({
                 notifications: updated,
                 unreadCount: updated.filter(n => !n.isRead).length
             });
-    });
+        });
 
-        set({connection: newCon});
+        set({ connection: newCon });
     }
 }));

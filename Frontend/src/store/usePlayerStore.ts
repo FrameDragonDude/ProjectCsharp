@@ -1,14 +1,10 @@
 import { create } from 'zustand';
 import type { MediaItem } from '../types';
 import { recordPlayHistory as recordPlayHistoryApi } from '../services/api/tuneVaultApi';
-import { useAuthStore } from './useAuthStore';
 
-const fallbackUserId = 2;
-
-const recordPlayHistory = (mediaItemId: string) => {
-	const userId = useAuthStore.getState().user?.id ?? fallbackUserId;
-	void recordPlayHistoryApi(mediaItemId, userId).catch((error) => {
-		console.error('Khong luu duoc lich su nghe:', error);
+const recordPlayHistory = (mediaItemId: string) => { 	
+	void recordPlayHistoryApi(mediaItemId).catch((error) => {
+		console.error('Không lưu được lịch sử nghe:', error);
 	});
 };
 
