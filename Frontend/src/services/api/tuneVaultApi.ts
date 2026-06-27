@@ -1,5 +1,5 @@
 import axiosClient from './axiosClient';
-import type { ArtistDetail, ArtistSummary, LibrarySummary, MediaItem, Playlist, PlayHistory, SearchResult } from '../../types';
+import type { ArtistDetail, ArtistSummary, LibrarySummary, MediaItem, Playlist, PlayHistory, SearchResult, FollowedEntity } from '../../types';
 
 export async function getLibrarySummary(): Promise<LibrarySummary> {
   const response = await axiosClient.get<LibrarySummary>('/library/summary');
@@ -128,7 +128,7 @@ export async function register(username: string, email: string, password: string
 
 export async function getProfile() {
   const response = await axiosClient.get('/user/profile');
-  return response.data as { id: string; username: string; email: string; fullName: string; bio: string; avatarUrl: string; location?: string; website?: string };
+  return response.data as { id: string; username: string; email: string; fullName: string; bio: string; avatarUrl: string; location?: string; website?: string; followersCount: number; followingCount: number };
 }
 
 export async function updateProfile(fullName: string, bio: string, avatarUrl: string) {
@@ -154,5 +154,10 @@ export async function toggleFollow(targetId: string, type: 'User' | 'Artist' = '
   const response = await axiosClient.post(`/follow/${targetId}`, null, {
     params: { type },
   });
+  return response.data;
+}
+
+export async function getFollowing(): Promise<FollowedEntity[]> {
+  const response = await axiosClient.get<FollowedEntity[]>('/user/following');
   return response.data;
 }

@@ -38,7 +38,7 @@ public sealed class ClaudeRecommendationService(
         {
             return context.CandidateItems
                 .Take(normalizedCount)
-                .Select(item => new SongRecommendationDto(item, "NgÆ°á»i dÃ¹ng chÆ°a cÃ³ lá»‹ch sá»­ nghe, gá»£i Ã½ bÃ i má»›i trong thÆ° viá»‡n."))
+                .Select(item => new SongRecommendationDto(item, "Người dùng chưa có lịch sử nghe, gợi ý bài mới trong thư viện."))
                 .ToList();
         }
 
@@ -170,8 +170,8 @@ public sealed class ClaudeRecommendationService(
             }
 
             var reason = item.TryGetProperty("reason", out var reasonElement)
-                ? reasonElement.GetString() ?? "PhÃ¹ há»£p vá»›i lá»‹ch sá»­ nghe gáº§n Ä‘Ã¢y."
-                : "PhÃ¹ há»£p vá»›i lá»‹ch sá»­ nghe gáº§n Ä‘Ã¢y.";
+                ? reasonElement.GetString() ?? "Phù hợp với lịch sử nghe gần đây."
+                : "Phù hợp với lịch sử nghe gần đây.";
 
             recommendations.Add(new SongRecommendationDto(mediaItem, reason));
 

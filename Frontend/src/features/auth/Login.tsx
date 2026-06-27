@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { login, getProfile } from '../../services/api/tuneVaultApi';
 
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
 
@@ -19,21 +21,20 @@ export default function Login() {
 
     try {
       const loginResponse = await login(username, password);
-      
-      // Store token so getProfile can use it in Authorization header
+
       localStorage.setItem('tunevault_token', loginResponse.token);
-      
+
       const profile = await getProfile();
-      
-      const user = { 
-        id: profile.id, 
-        email: profile.email, 
+
+      const user = {
+        id: profile.id,
+        email: profile.email,
         fullName: profile.fullName,
-        avatarUrl: profile.avatarUrl 
+        avatarUrl: profile.avatarUrl
       };
-      
+
       setAuth(user, loginResponse.token);
-      navigate('/'); // Chuyển về trang chủ sau khi login thành công
+      navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.message || err.response?.data || err.message || 'Có lỗi xảy ra, vui lòng thử lại.');
     } finally {
@@ -50,7 +51,7 @@ export default function Login() {
             {error}
           </div>
         )}
-        
+
         <div className="space-y-1.5 group">
           <label className="text-sm font-medium text-neutral-400 group-focus-within:text-green-400 transition-colors">Email hoặc Tên đăng nhập</label>
           <input
@@ -68,14 +69,23 @@ export default function Login() {
             <label className="text-sm font-medium text-neutral-400 group-focus-within:text-green-400 transition-colors">Mật khẩu</label>
             <a href="#" className="text-xs text-neutral-500 hover:text-white transition-colors">Quên mật khẩu?</a>
           </div>
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 text-white placeholder-neutral-600 transition-all"
-            placeholder="••••••••"
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 text-white placeholder-neutral-600 transition-all pr-12"
+              placeholder="••••••••"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-0 pr-4 flex items-center text-neutral-400 hover:text-white transition-colors"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
         </div>
 
         <button

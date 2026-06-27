@@ -8,12 +8,11 @@ import SongDetailPanel from './SongDetailPanel';
 export default function MainLayout() {
   return (
     <div className="h-screen flex flex-col bg-black text-white overflow-hidden">
-      {/* Vùng phía trên chứa Sidebar, Main Content, và Right Panel */}
       <div className="flex-1 flex overflow-hidden">
         <Sidebar />
-        
+
         <main className="flex-1 overflow-y-auto bg-neutral-900 rounded-lg my-2 mr-2">
-          <Outlet /> 
+          <Outlet />
         </main>
 
         <aside className="w-72 bg-black hidden lg:flex flex-col p-4 border-l border-neutral-900 my-2">

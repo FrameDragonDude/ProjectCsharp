@@ -87,3 +87,10 @@ export interface SearchResult {
 	filePath?: string;
 	coverImageUrl?: string | null;
 }
+
+export interface FollowedEntity {
+	id: number;
+	name: string;
+	avatarUrl: string | null;
+	type: 'User' | 'Artist';
+}

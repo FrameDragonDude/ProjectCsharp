@@ -1,28 +1,34 @@
 import { Home, Search, Library, Bell, User, Send, LogOut, LogIn } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useEffect } from 'react';
 
 
 export default function Sidebar() {
-  const {unreadCount, connectSignalR, fetchNotifications} = useNotificationStore(); 
-  const currentUser = useAuthStore(state => state.user?.id?.toString() || ""); 
+  const { unreadCount, connectSignalR, fetchNotifications } = useNotificationStore();
+  const currentUser = useAuthStore(state => state.user?.id?.toString() || "");
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const navigate = useNavigate();
+  const location = useLocation();
   const logout = useAuthStore(state => state.logout);
+
+  const isActive = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
+  };
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
-  useEffect (() => {
+  useEffect(() => {
     if (isAuthenticated && currentUser) {
       fetchNotifications(currentUser);
       connectSignalR(currentUser);
     }
-  },[isAuthenticated, currentUser, fetchNotifications, connectSignalR])
+  }, [isAuthenticated, currentUser, fetchNotifications, connectSignalR])
 
   return (
     <aside className="w-60 bg-black flex flex-col p-6 space-y-8">
@@ -36,33 +42,33 @@ export default function Sidebar() {
 
       {/* Menu Navigation */}
       <nav className="flex flex-col space-y-5">
-        <Link to="/" className="flex items-center space-x-4 text-neutral-400 hover:text-white transition-colors duration-200">
+        <Link to="/" className={`flex items-center space-x-4 transition-colors duration-200 ${isActive('/') ? 'text-green-400' : 'text-neutral-400 hover:text-white'}`}>
           <Home size={24} />
           <span className="font-semibold">Trang chủ</span>
         </Link>
-        <Link to="/search" className="flex items-center space-x-4 text-neutral-400 hover:text-white transition-colors duration-200">
+        <Link to="/search" className={`flex items-center space-x-4 transition-colors duration-200 ${isActive('/search') ? 'text-green-400' : 'text-neutral-400 hover:text-white'}`}>
           <Search size={24} />
           <span className="font-semibold">Tìm kiếm</span>
         </Link>
-        
+
         {isAuthenticated && (
           <>
-            <Link to="/library" className="flex items-center space-x-4 text-neutral-400 hover:text-white transition-colors duration-200">
+            <Link to="/library" className={`flex items-center space-x-4 transition-colors duration-200 ${isActive('/library') ? 'text-green-400' : 'text-neutral-400 hover:text-white'}`}>
               <Library size={24} />
               <span className="font-semibold">Thư viện</span>
             </Link>
-            <Link to="/share" className="flex items-center space-x-4 text-neutral-400 hover:text-white transition-colors duration-200">
+            <Link to="/share" className={`flex items-center space-x-4 transition-colors duration-200 ${isActive('/share') ? 'text-green-400' : 'text-neutral-400 hover:text-white'}`}>
               <Send size={24} />
               <span className="font-semibold">Hộp thư chia sẻ</span>
             </Link>
-            <Link to="/notifications" className="flex items-center space-x-4 text-neutral-400 hover:text-white transition-colors duration-200 mt-6 relative">
+            <Link to="/notifications" className={`flex items-center space-x-4 transition-colors duration-200 mt-6 relative ${isActive('/notifications') ? 'text-green-400' : 'text-neutral-400 hover:text-white'}`}>
               <div className="relative">
-              <Bell size={24} />
-              {unreadCount > 0  && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
+                <Bell size={24} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </div>
               <span className="font-semibold">Thông báo</span>
             </Link>
@@ -73,8 +79,8 @@ export default function Sidebar() {
       <div className="mt-auto pt-6 border-t border-neutral-800 space-y-4">
         {isAuthenticated ? (
           <>
-            <Link to="/profile" className="flex items-center space-x-3 text-neutral-400 hover:text-white transition-colors duration-200 group">
-              <div className="w-8 h-8 bg-neutral-700 rounded-full flex items-center justify-center group-hover:bg-neutral-600 transition">
+            <Link to="/profile" className={`flex items-center space-x-3 transition-colors duration-200 group ${isActive('/profile') ? 'text-green-400' : 'text-neutral-400 hover:text-white'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center transition ${isActive('/profile') ? 'bg-green-400/20' : 'bg-neutral-700 group-hover:bg-neutral-600'}`}>
                 <User size={16} />
               </div>
               <span className="font-semibold text-sm">Hồ sơ của tôi</span>
