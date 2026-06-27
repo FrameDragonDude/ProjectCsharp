@@ -39,19 +39,19 @@ export async function searchCatalog(query: string): Promise<SearchResult[]> {
   return response.data;
 }
 
-export async function createPlaylist(name: string, description: string, createdByUserId?: string | number): Promise<Playlist> {
-  const response = await axiosClient.post<Playlist>('/playlists', {
+export async function createPlaylist(name: string, description: string): Promise<Playlist> {
+  const response = await axiosClient.post<Playlist>('/playlists/user', {
     name,
     description,
-    createdByUserId: createdByUserId === undefined || createdByUserId === null ? null : Number(createdByUserId),
   });
 
   return response.data;
 }
 
 export async function addMediaToPlaylist(playlistId: string | number, mediaItemId: string | number): Promise<Playlist[]> {
-  await axiosClient.post(`/playlists/${playlistId}/tracks`, {
-    mediaItemId: String(mediaItemId),
+  await axiosClient.post('/playlists/add-track', {
+    playlistId: Number(playlistId),
+    mediaItemId: Number(mediaItemId),
   });
 
   const response = await axiosClient.get<LibrarySummary>('/library/summary');
@@ -69,15 +69,14 @@ export async function getVideoItems(): Promise<MediaItem[]> {
   return response.data;
 }
 
-export async function recordPlayHistory(mediaItemId: string | number, userId?: string | number): Promise<void> {
+export async function recordPlayHistory(mediaItemId: string | number): Promise<void> {
   await axiosClient.post('/play-histories', {
-    userId: userId === undefined || userId === null ? null : Number(userId),
     mediaItemId: Number(mediaItemId),
   });
 }
 
-export async function getRecentPlayHistories(userId: string | number = ''): Promise<PlayHistory[]> {
-  const response = await axiosClient.get<PlayHistory[]>(`/play-histories/${String(userId)}/recent`);
+export async function getRecentPlayHistories(): Promise<PlayHistory[]> {
+  const response = await axiosClient.get<PlayHistory[]>('/play-histories/recent');
   return response.data;
 }
 

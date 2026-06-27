@@ -2,22 +2,21 @@ using MediatR;
 using MySqlConnector;
 using System.ComponentModel.DataAnnotations;
 
-namespace Backend.Models
+namespace Backend.Services
 {
     public sealed record UpdateProfileCommand(
         [Required] int UserId, 
         
-        [Required(ErrorMessage = "Tên hiển thị không được để trống.")]
-        [MaxLength(35, ErrorMessage = "Tên hiển thị không được vượt quá 35 ký tự.")]
+        [Required(ErrorMessage = "Ten hien thi khong duoc de trong.")]
+        [MaxLength(35, ErrorMessage = "Ten hien thi khong duoc vuot qua 35 ky tu.")]
         string FullName, 
         
-        [MaxLength(200, ErrorMessage = "Tiểu sử không được vượt quá 200 ký tự.")]
+        [MaxLength(200, ErrorMessage = "Tieu su khong duoc vuot qua 200 ky tu.")]
         string? Bio, 
         
-        //[Url(ErrorMessage = "ÄÆ°á»ng dáº«n áº£nh Ä‘áº¡i diá»‡n khÃ´ng há»£p lá»‡.")]
         string? AvatarUrl
     ) : IRequest<bool>;
-
+    
     public class UpdateProfileCommandHandler : IRequestHandler<UpdateProfileCommand, bool>
     {
         private readonly IConfiguration _configuration;
@@ -30,9 +29,11 @@ namespace Backend.Models
             await connection.OpenAsync(cancellationToken);
 
             const string sql = @"
-                UPDATE UserProfiles 
-                SET FullName = @FullName, Bio = @Bio, AvatarUrl = @AvatarUrl
-                WHERE UserId = @UserId;";
+    UPDATE UserProfiles 
+    SET FullName = @FullName, 
+        Bio = @Bio, 
+        AvatarUrl = COALESCE(@AvatarUrl, AvatarUrl)
+    WHERE UserId = @UserId;";
 
             await using var cmd = new MySqlCommand(sql, connection);
             cmd.Parameters.AddWithValue("@UserId", request.UserId);
@@ -48,10 +49,10 @@ namespace Backend.Models
 
     public sealed record ToggleFollowCommand(
         [Required] int FollowerId, 
-        [Required(ErrorMessage = "Mã đối tượng theo dõi không được để trống.")] 
+        [Required(ErrorMessage = "TargetId khong duoc de trong.")] 
         int TargetId,
         [Required]
-        [RegularExpression("^(User|Artist)$", ErrorMessage = "Loại đối tượng (TargetType) chỉ được phép là 'User' hoặc 'Artist'.")]
+        [RegularExpression("^(User|Artist)$", ErrorMessage = "TargetType phai la 'User' hoac 'Artist'.")]
         string TargetType
     ) : IRequest<string>;
 
@@ -97,13 +98,12 @@ namespace Backend.Models
                 insertCmd.Parameters.AddWithValue("@TargetType", request.TargetType);
                 await insertCmd.ExecuteNonQueryAsync(cancellationToken);
                 
-                return $"ÄÃ£ theo dÃµi {request.TargetType} thÃ nh cÃ´ng!";
+                return $"Da theo doi {request.TargetType} thanh cong!";
             }
         }
     }
 
-    public record UserProfileDto(string Email, string FullName, string Bio, string? AvatarUrl, int FollowersCount = 0, int FollowingCount = 0);
-
+    public record UserProfileDto(string Email, string FullName, string Bio, string? AvatarUrl, int FollowersCount = 0, int FollowingCount = 0, DateTime? UpdatedAt);
     public record GetProfileQuery(int UserId) : IRequest<UserProfileDto?>;
 
     public class GetProfileQueryHandler : IRequestHandler<GetProfileQuery, UserProfileDto?>
@@ -136,11 +136,11 @@ namespace Backend.Models
                     FullName: reader.IsDBNull(reader.GetOrdinal("FullName")) ? "" : reader.GetString("FullName"),
                     Bio: reader.IsDBNull(reader.GetOrdinal("Bio")) ? "" : reader.GetString("Bio"),
                     AvatarUrl: reader.IsDBNull(reader.GetOrdinal("AvatarUrl")) ? null : reader.GetString("AvatarUrl"),
+                    UpdatedAt: reader.IsDBNull(reader.GetOrdinal("UpdatedAt")) ? null : reader.GetDateTime("UpdatedAt"),
                     FollowersCount: reader.GetInt32("FollowersCount"),
                     FollowingCount: reader.GetInt32("FollowingCount")
                 );
             }
-            
             return null;
         }
     }

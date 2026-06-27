@@ -1,15 +1,14 @@
-using Backend.Models;
+using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+using Backend.Services;
 
 namespace Backend.Controllers
 {
     [Authorize] 
     [ApiController]
     [Route("api/[controller]")]
-
     public class UserController : ControllerBase
     {
         private readonly IMediator _mediator;
@@ -24,18 +23,39 @@ namespace Backend.Controllers
             var query = new GetProfileQuery(userId);
             var profile = await _mediator.Send(query);
 
-            if (profile == null) return NotFound("KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin há»“ sÆ¡.");
+            if (profile == null) return NotFound("Khong tim thay thong tin ho so.");
             
             return Ok(profile);
         }
 
         [HttpPut("profile")]
-        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
+        public async Task<IActionResult> UpdateProfile([FromForm] UpdateProfileRequest request)
         {
             var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
 
-            var command = new UpdateProfileCommand(userId, request.FullName, request.Bio, request.AvatarUrl);
+            string? avatarUrl = null;
+
+            if (request.AvatarFile != null)
+            {
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+
+                var uniqueFileName = Guid.NewGuid().ToString() + "_" + request.AvatarFile.FileName;
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await request.AvatarFile.CopyToAsync(fileStream);
+                }
+
+                avatarUrl = $"/uploads/{uniqueFileName}"; 
+            }
+
+            var command = new UpdateProfileCommand(userId, request.FullName, request.Bio, avatarUrl);
             var success = await _mediator.Send(command);
             
             return success ? Ok("Cáº­p nháº­t thÃ nh cÃ´ng") : BadRequest("Lá»—i khi cáº­p nháº­t");
@@ -84,5 +104,11 @@ namespace Backend.Controllers
             return Ok(followingList);
         }
     }
-    public record UpdateProfileRequest(string FullName, string Bio, string AvatarUrl);
+
+    public class UpdateProfileRequest
+    {
+        public string FullName { get; set; } = string.Empty;
+        public string? Bio { get; set; }
+        public IFormFile? AvatarFile { get; set; }
+    }
 }

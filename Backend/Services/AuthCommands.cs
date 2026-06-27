@@ -1,19 +1,20 @@
 using Backend.Data.Security;
+using Backend.Domain.Entities;
 using MediatR;
 using MySqlConnector;
 using System.ComponentModel.DataAnnotations;
 
-namespace Backend.Models
+namespace Backend.Services
 {
     public sealed record RegisterCommand(
-        [Required(ErrorMessage = "Tên đăng nhập không được trống")] string Username,
-        [Required(ErrorMessage = "Email không được để trống")]
-        [EmailAddress(ErrorMessage = "Email không đúng định dạng, vui lòng nhập lại.")] string Email,
-        [MinLength(6, ErrorMessage = "Mật khẩu phải có ít nhất 6 ký tự.")]
+        [Required(ErrorMessage = "Ten dang nhap khong duoc de trong")] string Username,
+        [Required(ErrorMessage = "Email khong duoc de trong")]
+        [EmailAddress(ErrorMessage = "Email khong dung dinh dang! Vui long nhap lai.")] string Email,
+        [MinLength(6, ErrorMessage = "Mat khau phai co it nhat 6 ky tu.")]
         [RegularExpression(@"^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_]).+$",
-            ErrorMessage = "Mật khẩu phải bao gồm ít nhất 1 chữ cái, 1 chữ số và 1 ký tự đặc biệt.")]
+            ErrorMessage = "Mat khau phai bao gom it nhat 1 chu cai, 1 chu so va 1 ky tu dac biet.")]
         string Password,
-        [Required(ErrorMessage = "Họ và tên không được để trống")] string FullName
+        [Required(ErrorMessage = "Ho va ten khong duoc de trong")] string FullName
     ) : IRequest<string>;
 
     public class RegisterCommandHandler : IRequestHandler<RegisterCommand, string>
@@ -41,7 +42,7 @@ namespace Backend.Models
                 checkCmd.Parameters.AddWithValue("@Email", request.Email);
                 checkCmd.Parameters.AddWithValue("@Username", request.Username);
                 var exists = await checkCmd.ExecuteScalarAsync(cancellationToken);
-                if (exists != null) throw new Exception("Username hoặc Email đã được sử dụng.");
+                if (exists != null) throw new Exception("Email hoặc tên đăng nhập đã tồn tại. Vui lòng chọn một email hoặc tên đăng nhập khác.");
             }
 
             var passwordHash = _passwordHasher.HashPassword(request.Password);
@@ -111,9 +112,10 @@ VALUES (@UserId, @FullName, 'Chào mừng đến với TuneVault!');";
             await connection.OpenAsync(cancellationToken);
 
             const string sql = @"
-                SELECT Id, Username, Email, PasswordHash
-                FROM Users
-                WHERE Email = @EmailOrUsername OR Username = @EmailOrUsername
+                SELECT u.Id, u.Username, u.Email, u.PasswordHash, r.Name AS RoleName 
+                FROM Users u
+                INNER JOIN Roles r ON u.RoleId = r.Id
+                WHERE u.Email = @EmailOrUsername OR u.Username = @EmailOrUsername 
                 LIMIT 1;";
 
             await using var command = new MySqlCommand(sql, connection);
@@ -129,23 +131,64 @@ VALUES (@UserId, @FullName, 'Chào mừng đến với TuneVault!');";
             var username = AuthDbHelper.ConvertDbValueToString(reader["Username"], "Username");
             var email = AuthDbHelper.ConvertDbValueToString(reader["Email"], "Email");
             var dbPasswordHash = AuthDbHelper.ConvertDbValueToString(reader["PasswordHash"], "PasswordHash");
+            
+            var roleName = AuthDbHelper.ConvertDbValueToString(reader["RoleName"], "RoleName");
 
             if (!_passwordHasher.VerifyPassword(request.Password, dbPasswordHash))
             {
                 throw new Exception("Tài khoản hoặc mật khẩu không chính xác.");
             }
 
-            var user = new User
-            {
-                Id = id,
-                Username = username,
-                Email = email
+            var user = new User 
+            { 
+                Id = id, 
+                Username = username, 
+                Email = email 
             };
 
-            return _tokenGenerator.GenerateToken(user);
+            return _tokenGenerator.GenerateToken(user, roleName);
         }
     }
 
+    public sealed record ChangePasswordCommand(int UserId, string OldPassword, string NewPassword) : IRequest<bool>;
+
+    public class ChangePasswordCommandHandler : IRequestHandler<ChangePasswordCommand, bool>
+    {
+        private readonly IConfiguration _configuration;
+        private readonly IPasswordHasher _passwordHasher;
+
+        public ChangePasswordCommandHandler(IConfiguration configuration, IPasswordHasher passwordHasher)
+        {
+            _configuration = configuration;
+            _passwordHasher = passwordHasher;
+        }
+
+        public async Task<bool> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
+        {
+            var connString = _configuration.GetConnectionString("SpotifyDb");
+            await using var connection = new MySqlConnection(connString);
+            await connection.OpenAsync(cancellationToken);
+
+            const string getPassSql = "SELECT PasswordHash FROM Users WHERE Id = @Id LIMIT 1;";
+            await using var getCmd = new MySqlCommand(getPassSql, connection);
+            getCmd.Parameters.AddWithValue("@Id", request.UserId);
+            
+            var currentHash = (string?)await getCmd.ExecuteScalarAsync(cancellationToken);
+            if (currentHash == null || !_passwordHasher.VerifyPassword(request.OldPassword, currentHash))
+            {
+                throw new Exception("Mật khẩu cũ không chính xác!");
+            }
+
+            var newHash = _passwordHasher.HashPassword(request.NewPassword);
+            const string updateSql = "UPDATE Users SET PasswordHash = @NewHash WHERE Id = @Id;";
+            await using var updateCmd = new MySqlCommand(updateSql, connection);
+            updateCmd.Parameters.AddWithValue("@NewHash", newHash);
+            updateCmd.Parameters.AddWithValue("@Id", request.UserId);
+
+            var rows = await updateCmd.ExecuteNonQueryAsync(cancellationToken);
+            return rows > 0;
+        }
+    }
     internal static class AuthDbHelper
     {
         public static string ConvertDbValueToString(object value, string columnName)

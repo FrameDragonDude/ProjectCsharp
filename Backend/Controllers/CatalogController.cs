@@ -2,19 +2,23 @@ using Backend.Data;
 using Backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Backend.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api")]
 public class CatalogController(IMusicCatalogRepository repository) : ControllerBase
 {
+    [AllowAnonymous]
     [HttpGet("library/summary")]
     public async Task<ActionResult<LibrarySummaryDto>> GetLibrarySummary(CancellationToken cancellationToken)
     {
         return Ok(await repository.GetLibrarySummaryAsync(cancellationToken));
     }
 
+    [AllowAnonymous]
     [HttpGet("media/{id}")]
     public async Task<ActionResult<MediaItemDto>> GetMediaItem(string id, CancellationToken cancellationToken)
     {
@@ -22,12 +26,14 @@ public class CatalogController(IMusicCatalogRepository repository) : ControllerB
         return item is null ? NotFound() : Ok(item);
     }
 
+    [AllowAnonymous]
     [HttpGet("media/video")]
     public async Task<ActionResult<IReadOnlyList<MediaItemDto>>> GetVideoItems(CancellationToken cancellationToken)
     {
         return Ok(await repository.GetVideoItemsAsync(cancellationToken));
     }
 
+    [AllowAnonymous]
     [HttpGet("playlists/{playlistId}")]
     public async Task<ActionResult<PlaylistDto>> GetPlaylistById(string playlistId, CancellationToken cancellationToken)
     {
@@ -35,31 +41,21 @@ public class CatalogController(IMusicCatalogRepository repository) : ControllerB
         return playlist is null ? NotFound() : Ok(playlist);
     }
 
+    [AllowAnonymous]
     [HttpGet("playlists/{playlistId}/tracks")]
     public async Task<ActionResult<IReadOnlyList<MediaItemDto>>> GetPlaylistTracks(string playlistId, CancellationToken cancellationToken)
     {
         return Ok(await repository.GetPlaylistTracksAsync(playlistId, cancellationToken));
     }
 
+    [AllowAnonymous]
     [HttpGet("search")]
     public async Task<ActionResult<IReadOnlyList<SearchResultDto>>> Search([FromQuery] string query, CancellationToken cancellationToken)
     {
         return Ok(await repository.SearchAsync(query ?? string.Empty, cancellationToken));
     }
 
-    [HttpPost("playlists")]
-    [Authorize]
-    public async Task<ActionResult<PlaylistDto>> CreatePlaylist([FromBody] CreatePlaylistRequest request, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(request.Name))
-        {
-            return BadRequest("Playlist name is required.");
-        }
-
-        var playlist = await repository.CreatePlaylistAsync(request, cancellationToken);
-        return Ok(playlist);
-    }
-
+    [Authorize(Roles = "Admin, Artist")]
     [HttpPost("albums")]
     [Authorize]
     public async Task<ActionResult<AlbumDto>> CreateAlbum([FromBody] CreateAlbumRequest request, CancellationToken cancellationToken)
@@ -73,6 +69,7 @@ public class CatalogController(IMusicCatalogRepository repository) : ControllerB
         return Ok(album);
     }
 
+    [Authorize(Roles = "Admin, Artist")]
     [HttpPatch("albums/{id}/cover")]
     [Authorize]
     public async Task<ActionResult<AlbumDto>> UpdateAlbumCover(string id, [FromBody] UpdateAlbumCoverRequest request, CancellationToken cancellationToken)
@@ -81,6 +78,7 @@ public class CatalogController(IMusicCatalogRepository repository) : ControllerB
         return updated is null ? NotFound() : Ok(updated);
     }
 
+    [Authorize(Roles = "Admin, Artist")]
     [HttpPatch("media/{id}/cover")]
     [Authorize]
     public async Task<ActionResult<MediaItemDto>> UpdateMediaCover(string id, [FromBody] UpdateAlbumCoverRequest request, CancellationToken cancellationToken)
@@ -89,19 +87,7 @@ public class CatalogController(IMusicCatalogRepository repository) : ControllerB
         return updated is null ? NotFound() : Ok(updated);
     }
 
-    [HttpPost("playlists/{playlistId}/tracks")]
-    [Authorize]
-    public async Task<IActionResult> AddTrack(string playlistId, [FromBody] AddTrackRequest request, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(request.MediaItemId))
-        {
-            return BadRequest("MediaItemId is required.");
-        }
-
-        await repository.AddMediaToPlaylistAsync(playlistId, request.MediaItemId, cancellationToken);
-        return NoContent();
-    }
-
+    [Authorize(Roles = "Admin, Artist")]
     [HttpPost("albums/{albumId}/tracks")]
     [Authorize]
     public async Task<IActionResult> AddTrackToAlbum(string albumId, [FromBody] AddTrackRequest request, CancellationToken cancellationToken)

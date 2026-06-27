@@ -1,4 +1,4 @@
-using Backend.Models;
+﻿﻿using Backend.Services;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -32,7 +32,7 @@ namespace Backend.Controllers
         {
             if (type != "User" && type != "Artist")
             {
-                return BadRequest("Loại đối tượng (type) chỉ được phép là 'User' hoặc 'Artist'..");
+                return BadRequest("Loại theo dõi không hợp lệ. Chỉ chấp nhận 'User' hoặc 'Artist'.");
             }
 
             var myUserIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -40,7 +40,7 @@ namespace Backend.Controllers
 
             if (type == "User" && myUserId == targetId)
             {
-                return BadRequest("Bạn không thể tự theo dõi chính mình.");
+                return BadRequest("Bạn không thể theo dõi chính mình.");
             }
 
             var senderProfile = await _context.UserProfiles.FirstOrDefaultAsync(p => p.UserId == myUserId);

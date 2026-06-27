@@ -1,4 +1,4 @@
-import {create} from 'zustand';
+import { create } from 'zustand';
 import * as signalR from '@microsoft/signalr';
 import axiosClient from '../services/api/axiosClient';
 
@@ -15,6 +15,7 @@ interface NotificationStore {
     notifications: NotificationItem[];
     unreadCount: number;
     connection: signalR.HubConnection | null;
+    // Xóa toàn bộ tham số userId đi
     fetchNotifications: () => Promise<void>;
     markAsRead: (id: string) => Promise<void>;
     markAllAsRead: () => Promise<void>;
@@ -27,14 +28,15 @@ export const useNotificationStore = create<NotificationStore>((set,get) => ({
     connection: null,
 
     fetchNotifications: async () => {
-        try{
-            const res = await axiosClient.get(`/notifications`);
+        try {
+            // Dùng axiosClient thay cho fetch chay
+            const res = await axiosClient.get('/social/notifications');
             const data: NotificationItem[] = res.data;
-            set ({
+            set({
                 notifications: data,
                 unreadCount: data.filter(n => !n.isRead).length
             });
-        } catch (error){
+        } catch (error) {
             console.error("Lỗi lấy thông báo:", error);
         }
     },
@@ -49,7 +51,7 @@ export const useNotificationStore = create<NotificationStore>((set,get) => ({
                 notifications: currentNotifications,
                 unreadCount: currentNotifications.filter(n => !n.isRead).length
             });
-        }catch(error){
+        } catch (error) {
             console.error("Lỗi đánh dấu đã đọc:", error);
         }
     },
@@ -64,8 +66,11 @@ export const useNotificationStore = create<NotificationStore>((set,get) => ({
         }
     },
 
-    connectSignalR: (userId: string) => {
+    connectSignalR: () => {
         if (get().connection) return;
+
+        const token = localStorage.getItem('tunevault_token');
+        if (!token) return; // Không có token thì cấm kết nối
 
         const newCon = new signalR.HubConnectionBuilder()
             .withUrl("http://localhost:5000/hubs/notifications",{
@@ -87,8 +92,8 @@ export const useNotificationStore = create<NotificationStore>((set,get) => ({
                 notifications: updated,
                 unreadCount: updated.filter(n => !n.isRead).length
             });
-    });
+        });
 
-        set({connection: newCon});
+        set({ connection: newCon });
     }
 }));
