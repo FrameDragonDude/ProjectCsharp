@@ -103,7 +103,7 @@ namespace Backend.Services
         }
     }
 
-    public record UserProfileDto(string Email, string FullName, string Bio, string? AvatarUrl, int FollowersCount = 0, int FollowingCount = 0, DateTime? UpdatedAt);
+    public record UserProfileDto(string Email, string FullName, string Bio, string? AvatarUrl, int FollowersCount = 0, int FollowingCount = 0, DateTime? UpdatedAt = null);
     public record GetProfileQuery(int UserId) : IRequest<UserProfileDto?>;
 
     public class GetProfileQueryHandler : IRequestHandler<GetProfileQuery, UserProfileDto?>
@@ -118,7 +118,7 @@ namespace Backend.Services
             await connection.OpenAsync(cancellationToken);
 
             const string sql = @"
-                SELECT u.Email, p.FullName, p.Bio, p.AvatarUrl,
+                SELECT u.Email, p.FullName, p.Bio, p.AvatarUrl, p.UpdatedAt,
                        (SELECT COUNT(*) FROM Follows WHERE TargetId = u.Id AND TargetType = 'User') AS FollowersCount,
                        (SELECT COUNT(*) FROM Follows WHERE FollowerId = u.Id) AS FollowingCount
                 FROM Users u
@@ -136,7 +136,7 @@ namespace Backend.Services
                     FullName: reader.IsDBNull(reader.GetOrdinal("FullName")) ? "" : reader.GetString("FullName"),
                     Bio: reader.IsDBNull(reader.GetOrdinal("Bio")) ? "" : reader.GetString("Bio"),
                     AvatarUrl: reader.IsDBNull(reader.GetOrdinal("AvatarUrl")) ? null : reader.GetString("AvatarUrl"),
-                    UpdatedAt: reader.IsDBNull(reader.GetOrdinal("UpdatedAt")) ? null : reader.GetDateTime("UpdatedAt"),
+                    UpdatedAt: reader.IsDBNull(reader.GetOrdinal("UpdatedAt")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("UpdatedAt")),
                     FollowersCount: reader.GetInt32("FollowersCount"),
                     FollowingCount: reader.GetInt32("FollowingCount")
                 );
