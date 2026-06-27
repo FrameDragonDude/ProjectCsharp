@@ -1,0 +1,45 @@
+name: Deploy TuneVault System
+
+on:
+  push:
+    branches:
+      - main  # Kích hoạt khi push vào nhánh main
+
+jobs:
+  deploy-project:
+    name: Build and Deploy Frontend & Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install frontend dependencies
+        working-directory: ./Frontend
+        run: npm install
+
+      - name: Build frontend application
+        working-directory: ./Frontend
+        run: npm run build
+
+      # ---------- ĐẨY FRONTEND LÊN NETLIFY ----------
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v3
+        with:
+          publish-dir: './Frontend/dist'
+          production-branch: main
+          deploy-message: "Deploy from GitHub Actions: ${{ github.event.head_commit.message }}"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ nfp_QCXZhyAxtQrSQKFDcBzWSQjtbCTWarrx976c }} # Sửa cú pháp secrets
+          NETLIFY_SITE_ID: ${{ d2fb4517-4180-482c-9bf2-5672fe13c79e }}       # Sửa cú pháp secrets
+        timeout-minutes: 5 # Tăng lên 5 phút cho an toàn đường truyền
+
+      # ---------- KÍCH HOẠT BACKEND LÊN RENDER ----------
+      - name: Trigger Render Webhook to Deploy Backend
+        run: |
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
