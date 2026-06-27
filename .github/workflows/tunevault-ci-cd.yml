@@ -35,8 +35,8 @@ jobs:
           production-branch: main
           deploy-message: "Deploy from GitHub Actions: ${{ github.event.head_commit.message }}"
         env:
-          NETLIFY_AUTH_TOKEN: ${{ nfp_QCXZhyAxtQrSQKFDcBzWSQjtbCTWarrx976c }} # Sửa cú pháp secrets
-          NETLIFY_SITE_ID: ${{ d2fb4517-4180-482c-9bf2-5672fe13c79e }}       # Sửa cú pháp secrets
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }} # Sửa cú pháp secrets
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}       # Sửa cú pháp secrets
         timeout-minutes: 5 # Tăng lên 5 phút cho an toàn đường truyền
 
       # ---------- KÍCH HOẠT BACKEND LÊN RENDER ----------
