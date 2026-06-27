@@ -41,5 +41,6 @@ jobs:
 
       # ---------- KÍCH HOẠT BACKEND LÊN RENDER ----------
       - name: Trigger Render Webhook to Deploy Backend
+        if: secrets.RENDER_DEPLOY_HOOK_URL != ''
         run: |
           curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
