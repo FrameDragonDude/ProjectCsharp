@@ -48,14 +48,16 @@ export async function createPlaylist(name: string, description: string): Promise
   return response.data;
 }
 
-export async function addMediaToPlaylist(playlistId: string | number, mediaItemId: string | number): Promise<Playlist[]> {
+export async function getMyPlaylists(): Promise<Playlist[]> {
+  const response = await axiosClient.get<Playlist[]>('/playlists/my-playlists');
+  return response.data;
+}
+
+export async function addMediaToPlaylist(playlistId: string | number, mediaItemId: string | number): Promise<void> {
   await axiosClient.post('/playlists/add-track', {
     playlistId: Number(playlistId),
     mediaItemId: Number(mediaItemId),
   });
-
-  const response = await axiosClient.get<LibrarySummary>('/library/summary');
-  return response.data.playlists;
 }
 
 export async function removeMediaFromPlaylist(playlistId: string | number, mediaItemId: string | number): Promise<void> {

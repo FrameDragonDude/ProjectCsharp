@@ -34,6 +34,21 @@ public class PlaylistsController : ControllerBase
         return Ok(playlists);
     }
 
+    // GET: api/playlists/my-playlists
+    [HttpGet("my-playlists")]
+    public async Task<IActionResult> GetMyPlaylists()
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
+
+        var playlists = await _context.Playlists
+            .Where(p => p.CreatedByUserId == userId)
+            .OrderByDescending(p => p.CreatedAt)
+            .ToListAsync();
+
+        return Ok(playlists);
+    }
+
     // POST: api/playlists/user
     [HttpPost("user")]
     public async Task<IActionResult> CreatePlaylist([FromBody] PlaylistCreateDto dto)

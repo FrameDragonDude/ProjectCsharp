@@ -1,7 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, Plus, Upload, ListMusic, Video, Music, Play, Share } from 'lucide-react';
-import { addMediaToPlaylist, createPlaylist, getLibrarySummary, createAlbum, getPlaylistTracks, uploadMediaItem } from '../../services/api/tuneVaultApi';
+import { addMediaToPlaylist, createPlaylist, getLibrarySummary, createAlbum, getPlaylistTracks, uploadMediaItem, getMyPlaylists } from '../../services/api/tuneVaultApi';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import type { MediaItem, Playlist } from '../../types';
@@ -42,9 +42,12 @@ export default function Library() {
   const loadLibrary = async () => {
     try {
       setLoading(true);
-      const data = await getLibrarySummary();
-      setPlaylists(data.playlists);
-      setSongs(data.songs);
+      const [playlistsData, summaryData] = await Promise.all([
+        getMyPlaylists(),
+        getLibrarySummary()
+      ]);
+      setPlaylists(playlistsData);
+      setSongs(summaryData.songs);
       setError('');
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Khong tai duoc du lieu tu API');
@@ -288,8 +291,7 @@ export default function Library() {
                         <button
                           onClick={() => {
                             setTargetTrack(item);
-                            const myPlaylists = playlists.filter(p => String(p.createdByUserId) === String(user?.id));
-                            setTargetPlaylistId(String(myPlaylists[0]?.id ?? ''));
+                            setTargetPlaylistId(String(playlists[0]?.id ?? ''));
                           }}
                           className="inline-flex items-center gap-2 rounded-full border border-neutral-600 px-3 py-1.5 text-sm font-medium hover:border-white transition"
                         >
@@ -500,11 +502,10 @@ export default function Library() {
                 onChange={(event) => setTargetPlaylistId(event.target.value)}
                 className="w-full rounded-lg bg-neutral-800 border border-neutral-700 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/30"
               >
-                {playlists.filter(playlist => String(playlist.createdByUserId) === String(user?.id)).length === 0 ? (
+                {playlists.length === 0 ? (
                   <option value="" disabled>Bạn chưa tạo playlist nào</option>
                 ) : (
                   playlists
-                    .filter(playlist => String(playlist.createdByUserId) === String(user?.id))
                     .map((playlist) => (
                       <option key={playlist.id} value={String(playlist.id)}>
                         {playlist.name}

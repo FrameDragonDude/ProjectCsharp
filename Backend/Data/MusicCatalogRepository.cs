@@ -8,7 +8,7 @@ namespace Backend.Data;
 
 public interface IMusicCatalogRepository
 {
-    Task<LibrarySummaryDto> GetLibrarySummaryAsync(CancellationToken cancellationToken = default);
+    Task<LibrarySummaryDto> GetLibrarySummaryAsync(int? userId, CancellationToken cancellationToken = default);
     Task<MediaItemDto?> GetMediaItemByIdAsync(string id, CancellationToken cancellationToken = default);
     Task<PlaylistDto?> GetPlaylistByIdAsync(string id, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<MediaItemDto>> GetPlaylistTracksAsync(string playlistId, CancellationToken cancellationToken = default);
@@ -37,14 +37,14 @@ public sealed class MySqlMusicCatalogRepository(IConfiguration configuration) : 
         ?? Environment.GetEnvironmentVariable("SPOTIFY_DB_CONNECTION")
         ?? throw new InvalidOperationException("Missing database connection string. Set ConnectionStrings:SpotifyDb or SPOTIFY_DB_CONNECTION.");
 
-    public async Task<LibrarySummaryDto> GetLibrarySummaryAsync(CancellationToken cancellationToken = default)
+    public async Task<LibrarySummaryDto> GetLibrarySummaryAsync(int? userId, CancellationToken cancellationToken = default)
     {
         await using var connection = new MySqlConnection(ConnectionString);
         await connection.OpenAsync(cancellationToken);
 
         var songs = await LoadMediaItemsAsync(connection, "Audio", cancellationToken);
         var albums = await LoadAlbumsAsync(connection, cancellationToken);
-        var playlists = await LoadPlaylistsAsync(connection, cancellationToken);
+        var playlists = await LoadPlaylistsAsync(connection, userId, cancellationToken);
 
         return new LibrarySummaryDto(songs, albums, playlists);
     }
@@ -618,9 +618,9 @@ ORDER BY a.ReleaseDate DESC;";
         return items;
     }
 
-    private static async Task<IReadOnlyList<PlaylistDto>> LoadPlaylistsAsync(MySqlConnection connection, CancellationToken cancellationToken)
+    private static async Task<IReadOnlyList<PlaylistDto>> LoadPlaylistsAsync(MySqlConnection connection, int? userId, CancellationToken cancellationToken)
     {
-        const string sql = @"
+        var sql = new StringBuilder(@"
 SELECT p.Id, p.Name, p.Description, p.IsPublic, p.CreatedByUserId, COUNT(pt.MediaItemId) AS TrackCount,
     (
         SELECT COALESCE(m.CoverImageUrl, a.CoverImageUrl)
@@ -633,10 +633,27 @@ SELECT p.Id, p.Name, p.Description, p.IsPublic, p.CreatedByUserId, COUNT(pt.Medi
     ) AS CoverImageUrl
 FROM Playlists p
 LEFT JOIN PlaylistTracks pt ON pt.PlaylistId = p.Id
-GROUP BY p.Id, p.Name, p.Description, p.IsPublic, p.CreatedByUserId, p.CreatedAt
-ORDER BY p.CreatedAt DESC;";
+");
 
-        await using var command = new MySqlCommand(sql, connection);
+        if (userId.HasValue)
+        {
+            sql.Append("WHERE p.IsPublic = 1 OR p.CreatedByUserId = @UserId ");
+        }
+        else
+        {
+            sql.Append("WHERE p.IsPublic = 1 ");
+        }
+        
+        sql.Append(@"
+GROUP BY p.Id, p.Name, p.Description, p.IsPublic, p.CreatedByUserId, p.CreatedAt
+ORDER BY p.CreatedAt DESC;");
+
+        await using var command = new MySqlCommand(sql.ToString(), connection);
+
+        if (userId.HasValue)
+        {
+            command.Parameters.AddWithValue("@UserId", userId.Value);
+        }
 
         var items = new List<PlaylistDto>();
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);

@@ -15,7 +15,9 @@ public class CatalogController(IMusicCatalogRepository repository) : ControllerB
     [HttpGet("library/summary")]
     public async Task<ActionResult<LibrarySummaryDto>> GetLibrarySummary(CancellationToken cancellationToken)
     {
-        return Ok(await repository.GetLibrarySummaryAsync(cancellationToken));
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        int? userId = userIdClaim is not null ? int.Parse(userIdClaim.Value) : null;
+        return Ok(await repository.GetLibrarySummaryAsync(userId, cancellationToken));
     }
 
     [AllowAnonymous]
