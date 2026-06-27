@@ -45,7 +45,7 @@ export default function Home() {
     })();
 
     if (isAuthenticated && currentUser) {
-      void getRecentPlayHistories(currentUser)
+      void getRecentPlayHistories()
         .then((data) => {
           if (mounted) {
             setRecentSongs(data.slice(0, 20));

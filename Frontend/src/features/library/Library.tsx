@@ -85,7 +85,7 @@ export default function Library() {
 
     try {
       setCreatePlaylistError('');
-      await createPlaylist(playlistName.trim(), playlistDescription.trim(), user?.id);
+      await createPlaylist(playlistName.trim(), playlistDescription.trim());      
       setPlaylistName('');
       setPlaylistDescription('');
       setCreateOpen(false);
@@ -122,7 +122,6 @@ export default function Library() {
       const formData = new FormData();
       formData.append('Title', uploadTitle.trim());
       formData.append('MediaType', uploadType);
-      formData.append('OwnerId', String(user?.id ?? 0));
       formData.append('File', uploadFile);
 
       await uploadMediaItem(formData);
