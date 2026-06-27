@@ -279,7 +279,8 @@ export default function Library() {
                         <button
                           onClick={() => {
                             setTargetTrack(item);
-                            setTargetPlaylistId(String(playlists[0]?.id ?? ''));
+                            const myPlaylists = playlists.filter(p => String(p.createdByUserId) === String(user?.id));
+                            setTargetPlaylistId(String(myPlaylists[0]?.id ?? ''));
                           }}
                           className="inline-flex items-center gap-2 rounded-full border border-neutral-600 px-3 py-1.5 text-sm font-medium hover:border-white transition"
                         >
@@ -480,11 +481,17 @@ export default function Library() {
                 onChange={(event) => setTargetPlaylistId(event.target.value)}
                 className="w-full rounded-lg bg-neutral-800 border border-neutral-700 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/30"
               >
-                {playlists.map((playlist) => (
-                  <option key={playlist.id} value={String(playlist.id)}>
-                    {playlist.name}
-                  </option>
-                ))}
+                {playlists.filter(playlist => String(playlist.createdByUserId) === String(user?.id)).length === 0 ? (
+                  <option value="" disabled>Bạn chưa tạo playlist nào</option>
+                ) : (
+                  playlists
+                    .filter(playlist => String(playlist.createdByUserId) === String(user?.id))
+                    .map((playlist) => (
+                      <option key={playlist.id} value={String(playlist.id)}>
+                        {playlist.name}
+                      </option>
+                    ))
+                )}
               </select>
               <div className="flex justify-end gap-3">
                 <button onClick={() => setTargetTrack(null)} className="rounded-full border border-neutral-700 px-4 py-2 text-sm hover:border-white transition">
