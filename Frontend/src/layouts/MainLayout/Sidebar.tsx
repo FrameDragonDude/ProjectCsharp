@@ -1,4 +1,4 @@
-import { Home, Search, Library, Bell, User, Send, LogOut, LogIn } from 'lucide-react';
+import { Home, Search, Library, Bell, User, Send, LogOut, LogIn, Shield } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -8,10 +8,15 @@ import { getUserIdFromToken } from '../../utils/authUtils';
 export default function Sidebar() {
   const {unreadCount, connectSignalR, fetchNotifications} = useNotificationStore(); 
   const token = localStorage.getItem('tunevault_token');
-
-  const currentUser = useAuthStore(state => state.user?.id?.toString()) 
+  
+  const user = useAuthStore(state => state.user);
+  
+  const currentUser = user?.id?.toString() 
                     || (token ? getUserIdFromToken()?.toString() : "");
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  
+  const isAdmin = user?.role === 'Admin' || user?.role === 1;
+
   const navigate = useNavigate();
   const location = useLocation();
   const logout = useAuthStore(state => state.logout);
@@ -35,7 +40,6 @@ export default function Sidebar() {
 
   return (
     <aside className="w-60 bg-black border-r border-neutral-800 flex flex-col p-6 space-y-8 select-none">
-      {/* Logo */}
       <div className="flex items-center space-x-2">
         <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
           <span className="text-black font-bold text-sm">TV</span>
@@ -43,7 +47,6 @@ export default function Sidebar() {
         <h1 className="text-2xl font-bold text-white tracking-tight">TuneVault</h1>
       </div>
 
-      {/* Menu Navigation */}
       <nav className="flex flex-col space-y-5">
         <Link to="/" className={`flex items-center space-x-4 transition-colors duration-200 ${isActive('/') ? 'text-green-400' : 'text-neutral-400 hover:text-white'}`}>
           <Home size={24} />
@@ -75,11 +78,17 @@ export default function Sidebar() {
               </div>
               <span className="font-semibold">Thông báo</span>
             </Link>
+
+            {isAdmin && (
+              <Link to="/admin" className={`flex items-center space-x-4 transition-colors duration-200 mt-6 pt-6 border-t border-neutral-800 ${isActive('/admin') ? 'text-green-400' : 'text-neutral-400 hover:text-white'}`}>
+                <Shield size={24} />
+                <span className="font-semibold">Quản trị viên</span>
+              </Link>
+            )}
           </>
         )}
       </nav>
         
-      {/* Footer Area */}
       <div className="mt-auto pt-6 border-t border-neutral-800 space-y-4">
         {isAuthenticated ? (
           <>

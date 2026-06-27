@@ -74,7 +74,7 @@ export default function Home() {
     let mounted = true;
 
     if (isAuthenticated && currentUser) {
-      void getRecentPlayHistories(currentUser.toString())
+      void getRecentPlayHistories()
         .then((data) => {
           if (mounted) {
             setRecentSongs(data.slice(0, 20));

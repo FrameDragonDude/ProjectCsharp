@@ -30,7 +30,8 @@ export default function Login() {
         id: profile.id,
         email: profile.email,
         fullName: profile.fullName,
-        avatarUrl: profile.avatarUrl
+        avatarUrl: profile.avatarUrl,
+        role: profile.role || profile.roleId // THÊM DÒNG NÀY ĐỂ BẮT ROLE TỪ API
       };
 
       setAuth(user, loginResponse.token);

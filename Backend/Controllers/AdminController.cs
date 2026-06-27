@@ -19,8 +19,8 @@ namespace Backend.Controllers
             _mediator = mediator;
         }
 
-        [HttpPost("artists")]
-        public async Task<IActionResult> CreateArtist([FromBody] CreateArtistCommand command)
+        [HttpPost("change-role")]
+        public async Task<IActionResult> ChangeUserRole([FromBody] ChangeUserRoleCommand command)
         {
             try
             {
@@ -33,6 +33,7 @@ namespace Backend.Controllers
             }
         }
 
+        // --- Phần UpdateUserProfile bên dưới giữ nguyên ---
         [HttpPut("users/{targetUserId}/profile")]
         public async Task<IActionResult> UpdateUserProfile(int targetUserId, [FromForm] UpdateProfileRequest request)
         {

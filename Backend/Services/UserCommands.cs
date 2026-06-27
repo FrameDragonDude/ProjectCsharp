@@ -103,7 +103,16 @@ namespace Backend.Services
         }
     }
 
-    public record UserProfileDto(string Email, string FullName, string Bio, string? AvatarUrl, int FollowersCount = 0, int FollowingCount = 0, DateTime? UpdatedAt = null);
+    public record UserProfileDto(
+        string Email, 
+        string FullName, 
+        string Bio, 
+        string? AvatarUrl, 
+        int RoleId, // <--- THÊM Ở ĐÂY
+        int FollowersCount = 0, 
+        int FollowingCount = 0, 
+        DateTime? UpdatedAt = null
+    );
     public record GetProfileQuery(int UserId) : IRequest<UserProfileDto?>;
 
     public class GetProfileQueryHandler : IRequestHandler<GetProfileQuery, UserProfileDto?>
@@ -117,8 +126,9 @@ namespace Backend.Services
             await using var connection = new MySqlConnection(connString);
             await connection.OpenAsync(cancellationToken);
 
+            // 2. THÊM u.RoleId VÀO CÂU LỆNH SELECT
             const string sql = @"
-                SELECT u.Email, p.FullName, p.Bio, p.AvatarUrl, p.UpdatedAt,
+                SELECT u.Email, u.RoleId, p.FullName, p.Bio, p.AvatarUrl, p.UpdatedAt,
                        (SELECT COUNT(*) FROM Follows WHERE TargetId = u.Id AND TargetType = 'User') AS FollowersCount,
                        (SELECT COUNT(*) FROM Follows WHERE FollowerId = u.Id) AS FollowingCount
                 FROM Users u
@@ -131,11 +141,13 @@ namespace Backend.Services
             await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
             if (await reader.ReadAsync(cancellationToken))
             {
+                // 3. ĐỌC RoleId TỪ DATABASE VÀ MAP VÀO DTO
                 return new UserProfileDto(
                     Email: reader.GetString("Email"),
                     FullName: reader.IsDBNull(reader.GetOrdinal("FullName")) ? "" : reader.GetString("FullName"),
                     Bio: reader.IsDBNull(reader.GetOrdinal("Bio")) ? "" : reader.GetString("Bio"),
                     AvatarUrl: reader.IsDBNull(reader.GetOrdinal("AvatarUrl")) ? null : reader.GetString("AvatarUrl"),
+                    RoleId: reader.GetInt32("RoleId"), // <--- ĐỌC TỪ DB Ở ĐÂY
                     UpdatedAt: reader.IsDBNull(reader.GetOrdinal("UpdatedAt")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("UpdatedAt")),
                     FollowersCount: reader.GetInt32("FollowersCount"),
                     FollowingCount: reader.GetInt32("FollowingCount")
