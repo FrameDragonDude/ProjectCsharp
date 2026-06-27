@@ -6,11 +6,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 
+
 namespace Backend.Controllers;
 
 [ApiController]
 [Route("api")]
 [Authorize]
+
 public sealed class SocialController(
     IMusicCatalogRepository repository,
     IClaudeRecommendationService recommendationService,
@@ -82,31 +84,6 @@ public sealed class SocialController(
         {
             return StatusCode(StatusCodes.Status503ServiceUnavailable, ex.Message);
         }
-    }
-
-    [HttpGet("social/notifications")]
-    public async Task<ActionResult<IReadOnlyList<NotificationDto>>> GetNotifications(
-        [FromQuery] int userId, CancellationToken cancellationToken)
-    {
-        if (userId <= 0) return BadRequest("UserId is required ");
-        {
-            return Ok(await repository.GetNotificationsAsync(userId.ToString(), cancellationToken));
-        }
-    }
-
-    [HttpPatch("notifications/{id}/read")]
-    public async Task<ActionResult> MarAsRead(int id, CancellationToken cancellationToken)
-    {
-        await repository.MarkNotificationAsReadAsync(id.ToString(), cancellationToken);
-        return NoContent();
-    }
-
-    [HttpPatch("notifications/read-all")]
-    public async Task<ActionResult> MarkAllAsRead([FromQuery] int userId, CancellationToken cancellationToken)
-    {
-        if(userId <= 0) return BadRequest("UserId is required");
-        await repository.MarkAllNotificationsAsReadAsync(userId.ToString(), cancellationToken);
-        return NoContent();
     }
 
     [HttpGet("play-histories/{userId}/recent")]

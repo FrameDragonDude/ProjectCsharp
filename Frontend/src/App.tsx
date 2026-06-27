@@ -14,8 +14,15 @@ import VideoPlayer from './features/player/VideoPlayer';
 import AlbumDetail from './features/album/AlbumDetail';
 import ArtistDetail from './features/artist/ArtistDetail';
 import ProtectedRoute from './routes/ProtectedRoute';
-
+import { useEffect } from 'react';
 function App() {
+  
+  useEffect(() => {
+    const root = window.document.documentElement;
+    root.classList.add('dark');
+    root.classList.remove('light'); 
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>

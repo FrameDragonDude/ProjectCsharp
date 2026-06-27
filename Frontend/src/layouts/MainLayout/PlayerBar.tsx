@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
-import { Pause, Play, SkipBack, SkipForward, Volume2, Video } from 'lucide-react';
+import { useMemo,useState } from 'react';
+import { Pause, Play, SkipBack, SkipForward, Volume2, Video, Send } from 'lucide-react';
 import { resolveAssetUrl } from '../../utils/resolveAsset';
 import { usePlayerStore } from '../../store/usePlayerStore';
+import ShareModal from "../../components/ShareModal";
 
 const formatTime = (seconds: number) => {
   if (!Number.isFinite(seconds) || seconds <= 0) {
@@ -31,6 +32,8 @@ export default function PlayerBar() {
 
   const canGoPrevious = useMemo(() => queue.length > 1 && queueIndex > 0, [queue.length, queueIndex]);
   const canGoNext = useMemo(() => queue.length > 1 && queueIndex < queue.length - 1, [queue.length, queueIndex]);
+
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   return (
     <div className="h-24 bg-black border-t border-neutral-800 flex items-center justify-between px-4 shrink-0">
@@ -93,6 +96,16 @@ export default function PlayerBar() {
       </div>
 
       <div className="flex items-center justify-end w-1/3 space-x-3 text-neutral-400">
+        {currentTrack && (
+          <button
+            onClick={() => setIsShareOpen(true)}
+            className="text-neutral-400 hover:text-green-500 transition shrink-0 pl-1 cursor-pointer"
+            title="Chia sẻ nội dung đang phát"
+          >
+            <Send size={18} />
+          </button>
+        )}
+
         <Volume2 size={20} />
         <input
           type="range"
@@ -104,6 +117,12 @@ export default function PlayerBar() {
           className="w-24 accent-white cursor-pointer"
         />
       </div>
+      <ShareModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        mediaItemId={currentTrack?.id}
+        mediaTitle={currentTrack?.title || ''}
+      />
     </div>
   );
 }

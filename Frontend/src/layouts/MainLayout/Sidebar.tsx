@@ -3,11 +3,14 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useEffect } from 'react';
-
+import { getUserIdFromToken } from '../../utils/authUtils';
 
 export default function Sidebar() {
-  const { unreadCount, connectSignalR, fetchNotifications } = useNotificationStore();
-  const currentUser = useAuthStore(state => state.user?.id?.toString() || "");
+  const {unreadCount, connectSignalR, fetchNotifications} = useNotificationStore(); 
+  const token = localStorage.getItem('tunevault_token');
+
+  const currentUser = useAuthStore(state => state.user?.id?.toString()) 
+                    || (token ? getUserIdFromToken()?.toString() : "");
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const navigate = useNavigate();
   const location = useLocation();
@@ -25,13 +28,13 @@ export default function Sidebar() {
 
   useEffect(() => {
     if (isAuthenticated && currentUser) {
-      fetchNotifications(currentUser);
+      fetchNotifications();
       connectSignalR(currentUser);
     }
   }, [isAuthenticated, currentUser, fetchNotifications, connectSignalR])
 
   return (
-    <aside className="w-60 bg-black flex flex-col p-6 space-y-8">
+    <aside className="w-60 bg-black border-r border-neutral-800 flex flex-col p-6 space-y-8 select-none">
       {/* Logo */}
       <div className="flex items-center space-x-2">
         <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
@@ -75,7 +78,8 @@ export default function Sidebar() {
           </>
         )}
       </nav>
-
+        
+      {/* Footer Area */}
       <div className="mt-auto pt-6 border-t border-neutral-800 space-y-4">
         {isAuthenticated ? (
           <>

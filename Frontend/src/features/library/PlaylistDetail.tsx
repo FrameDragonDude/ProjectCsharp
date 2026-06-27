@@ -1,10 +1,24 @@
-import { useEffect, useState, type MouseEvent } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Clock, Heart, Image as ImageIcon, MoreHorizontal, Play, Trash2 } from 'lucide-react';
-import { getPlaylistById, getPlaylistTracks, removeMediaFromPlaylist } from '../../services/api/tuneVaultApi';
-import type { MediaItem, Playlist } from '../../types';
-import { usePlayerStore } from '../../store/usePlayerStore';
-import { resolveAssetUrl } from '../../utils/resolveAsset';
+import { useEffect, useState, type MouseEvent } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  ArrowLeft,
+  Clock,
+  Heart,
+  Image as ImageIcon,
+  MoreHorizontal,
+  Play,
+  Trash2,
+  Send,
+} from "lucide-react";
+import {
+  getPlaylistById,
+  getPlaylistTracks,
+  removeMediaFromPlaylist,
+} from "../../services/api/tuneVaultApi";
+import type { MediaItem, Playlist } from "../../types";
+import { usePlayerStore } from "../../store/usePlayerStore";
+import { resolveAssetUrl } from "../../utils/resolveAsset";
+import ShareModal from "../../components/ShareModal";
 
 export default function PlaylistDetail() {
   const { id } = useParams();
@@ -12,34 +26,43 @@ export default function PlaylistDetail() {
   const [playlist, setPlaylist] = useState<Playlist | null>(null);
   const [tracks, setTracks] = useState<MediaItem[]>([]);
   const playTrack = usePlayerStore((state) => state.playTrack);
-  const playlistId = id ? String(id) : '';
+  const playlistId = id ? String(id) : "";
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
 
     const loadData = async () => {
       try {
-        const [playlistData, trackData] = await Promise.all([getPlaylistById(playlistId), getPlaylistTracks(playlistId)]);
+        const [playlistData, trackData] = await Promise.all([
+          getPlaylistById(playlistId),
+          getPlaylistTracks(playlistId),
+        ]);
         setPlaylist(playlistData ?? null);
         setTracks(trackData);
       } catch (error) {
-        console.error('Failed to load playlist data:', error);
+        console.error("Failed to load playlist data:", error);
       }
     };
 
     void loadData();
   }, [id, playlistId]);
 
-  const handleRemoveTrack = async (e: MouseEvent<HTMLButtonElement>, mediaItemId: string) => {
+  const handleRemoveTrack = async (
+    e: MouseEvent<HTMLButtonElement>,
+    mediaItemId: string,
+  ) => {
     e.stopPropagation();
     if (!playlistId) return;
 
     try {
       await removeMediaFromPlaylist(playlistId, mediaItemId);
-      setTracks((prev) => prev.filter((t) => String(t.id) !== String(mediaItemId)));
+      setTracks((prev) =>
+        prev.filter((t) => String(t.id) !== String(mediaItemId)),
+      );
     } catch (error) {
-      console.error('Failed to remove track:', error);
-      alert('Failed to remove track.');
+      console.error("Failed to remove track:", error);
+      alert("Failed to remove track.");
     }
   };
 
@@ -82,20 +105,39 @@ export default function PlaylistDetail() {
 
         <div className="w-48 h-48 md:w-56 md:h-56 bg-neutral-800 shadow-2xl rounded flex-shrink-0 flex items-center justify-center overflow-hidden">
           {coverUrl ? (
-            <img src={coverUrl} alt={playlist.name} className="w-full h-full object-cover" />
+            <img
+              src={coverUrl}
+              alt={playlist.name}
+              className="w-full h-full object-cover"
+            />
           ) : (
             <ImageIcon size={64} className="text-neutral-600" />
           )}
         </div>
 
         <div className="flex flex-col text-white">
-          <span className="text-sm font-semibold uppercase tracking-wider mb-2">Playlist</span>
-          <h1 className="text-4xl md:text-6xl font-extrabold mb-4 md:mb-6 line-clamp-2">{playlist.name}</h1>
-          <p className="text-neutral-300 text-sm mb-2">{playlist.description ?? 'Khong co mo ta'}</p>
+          <span className="text-sm font-semibold uppercase tracking-wider mb-2">
+            Playlist
+          </span>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold">{playlist.name}</h1>
+            <button
+              onClick={() => setIsShareOpen(true)}
+              className="p-1.5 text-neutral-400 hover:text-green-500 bg-neutral-800/50 hover:bg-neutral-800 rounded transition"
+              title="Chia sẻ playlist"
+            >
+              <Send size={16} />
+            </button>
+          </div>
+          <p className="text-neutral-300 text-sm mb-2">
+            {playlist.description ?? "Khong co mo ta"}
+          </p>
           <div className="flex items-center text-sm font-medium">
-            <span className="hover:underline cursor-pointer">{playlist.createdByUserId}</span>
+            <span className="hover:underline cursor-pointer">
+              {playlist.createdByUserId}
+            </span>
             <span className="mx-1">•</span>
-            <span>{playlist.isPublic ? 'Cong khai' : 'Rieng tu'}</span>
+            <span>{playlist.isPublic ? "Cong khai" : "Rieng tu"}</span>
             <span className="mx-1">•</span>
             <span>{tracks.length} bai hat</span>
           </div>
@@ -136,7 +178,9 @@ export default function PlaylistDetail() {
               onClick={() => handlePlayTrack(track)}
               className="grid grid-cols-[40px_minmax(200px,1fr)_minmax(120px,1fr)_60px_40px] gap-4 px-4 py-3 rounded-md hover:bg-neutral-800/60 group transition items-center cursor-pointer text-sm"
             >
-              <div className="text-center text-neutral-400 group-hover:hidden">{index + 1}</div>
+              <div className="text-center text-neutral-400 group-hover:hidden">
+                {index + 1}
+              </div>
               <div className="hidden group-hover:flex justify-center text-white">
                 <Play size={16} fill="white" />
               </div>
@@ -144,20 +188,32 @@ export default function PlaylistDetail() {
               <div className="flex items-center space-x-3 overflow-hidden">
                 <div className="w-10 h-10 bg-neutral-800 rounded shrink-0 flex items-center justify-center overflow-hidden">
                   {track.coverImageUrl ? (
-                    <img src={resolveAssetUrl(track.coverImageUrl)} alt={track.title} className="w-full h-full object-cover" />
+                    <img
+                      src={resolveAssetUrl(track.coverImageUrl)}
+                      alt={track.title}
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <ImageIcon size={16} className="text-neutral-500" />
                   )}
                 </div>
                 <div className="flex flex-col pr-4 overflow-hidden">
-                  <span className="text-white font-medium truncate">{track.title}</span>
-                  <span className="text-neutral-400 truncate hover:underline hover:text-white">{track.artistName ?? 'TuneVault'}</span>
+                  <span className="text-white font-medium truncate">
+                    {track.title}
+                  </span>
+                  <span className="text-neutral-400 truncate hover:underline hover:text-white">
+                    {track.artistName ?? "TuneVault"}
+                  </span>
                 </div>
               </div>
 
-              <div className="hidden md:block text-neutral-400 truncate hover:underline hover:text-white">{track.albumTitle ?? '-'}</div>
+              <div className="hidden md:block text-neutral-400 truncate hover:underline hover:text-white">
+                {track.albumTitle ?? "-"}
+              </div>
 
-              <div className="text-neutral-400 text-center">{track.duration}</div>
+              <div className="text-neutral-400 text-center">
+                {track.duration}
+              </div>
 
               <div className="flex justify-center">
                 <button
@@ -172,6 +228,12 @@ export default function PlaylistDetail() {
           ))}
         </div>
       </div>
+      <ShareModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        playlistId={id}
+        mediaTitle={playlist?.name || "Playlist"}
+      />
     </div>
   );
 }

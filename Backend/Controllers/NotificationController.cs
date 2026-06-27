@@ -13,64 +13,33 @@ namespace Backend.Controllers;
 [ApiController]
 [Route("api/notifications")]
 [Authorize]
-public class NotificationController(TuneVaultDbContext dbContext, IHubContext<NotificationHub> hubContext) : ControllerBase
+public class NotificationController(IMusicCatalogRepository repository) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Notification>>> GetNotifications()
+    public async Task<IActionResult> GetNotifications(CancellationToken cancellationToken)
     {
         var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
-
-        var notifications = await dbContext.Notifications
-            .Where(n => n.UserId == userId)
-            .OrderByDescending(n => n.CreatedAt)
-            .Take(50)
-            .ToListAsync();
-
+        var notifications = await repository.GetNotificationsAsync(userId.ToString(), cancellationToken);
         return Ok(notifications);
     }
 
-    [HttpPost("{id}/read")]
-    public async Task<IActionResult> MarkAsRead(int id)
+    [HttpPatch("{id}/read")]
+    public async Task<IActionResult> MarAsRead(int id, CancellationToken cancellationToken)
+    {
+        await repository.MarkNotificationAsReadAsync(id.ToString(), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPatch("read-all")]
+    public async Task<IActionResult> MarkAllAsRead( CancellationToken cancellationToken)
     {
         var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
 
-        var notification = await dbContext.Notifications.FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
-        if (notification != null)
-        {
-            notification.IsRead = true;
-            await dbContext.SaveChangesAsync();
-        }
-
-        return Ok();
+        await repository.MarkAllNotificationsAsReadAsync(userId.ToString(), cancellationToken);
+        return NoContent();
     }
 
-    [HttpPost("test-send")]
-    public async Task<IActionResult> TestSendNotification([FromBody] SendNotificationRequest request)
-    {
-        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
-
-        var notification = new Notification
-        {
-            UserId = userId,
-            Type = "System",
-            PayloadJson = System.Text.Json.JsonSerializer.Serialize(new { request.Title, request.Message })
-        };
-
-        dbContext.Notifications.Add(notification);
-        await dbContext.SaveChangesAsync();
-
-        await hubContext.Clients.Group(userId.ToString()).SendAsync("ReceiveNotification", notification);
-
-        return Ok(notification);
-    }
-}
-
-public class SendNotificationRequest
-{
-    public string Title { get; set; } = string.Empty;
-    public string Message { get; set; } = string.Empty;
 }
 

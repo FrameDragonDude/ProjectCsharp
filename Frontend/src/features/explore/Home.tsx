@@ -1,11 +1,22 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Album, Music2, Play, Plus, Video, Users } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { getArtists, getLibrarySummary, getRecentPlayHistories } from '../../services/api/tuneVaultApi';
-import { resolveAssetUrl } from '../../utils/resolveAsset';
-import { usePlayerStore } from '../../store/usePlayerStore';
-import { useAuthStore } from '../../store/useAuthStore';
-import type { Album as AlbumType, ArtistSummary, MediaItem, PlayHistory } from '../../types';
+import { useEffect, useMemo, useState } from "react";
+import { Album, Music2, Play, Plus, Video, Users, Send } from "lucide-react";
+import { Link } from "react-router-dom";
+import {
+  getArtists,
+  getLibrarySummary,
+  getRecentPlayHistories,
+} from "../../services/api/tuneVaultApi";
+import { resolveAssetUrl } from "../../utils/resolveAsset";
+import { usePlayerStore } from "../../store/usePlayerStore";
+import { useAuthStore } from "../../store/useAuthStore";
+import type {
+  Album as AlbumType,
+  ArtistSummary,
+  MediaItem,
+  PlayHistory,
+} from "../../types";
+import { getUserIdFromToken } from "../../utils/authUtils";
+import ShareModal from "../../components/ShareModal";
 
 type ArtistCard = ArtistSummary & {
   coverImageUrl?: string | null;
@@ -16,85 +27,115 @@ export default function Home() {
   const [albums, setAlbums] = useState<AlbumType[]>([]);
   const [artists, setArtists] = useState<ArtistSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [recentSongs, setRecentSongs] = useState<PlayHistory[]>([]);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [selectMedia, setSelectedMedia] = useState({ id: "", title: "" });
+
   const playTrack = usePlayerStore((state) => state.playTrack);
   const openVideo = usePlayerStore((state) => state.openVideo);
+  const currentTrack = usePlayerStore((state) => state.currentTrack);
+  const user = useAuthStore((state) => state.user);
+  const currentUser = user?.id || getUserIdFromToken();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const currentUser = useAuthStore((state) => state.user?.id);
+
+  useEffect(() => {
+    let mounted = true;
+    void (async () => {
+      try {
+        setLoading(true);
+        const [library, artistList] = await Promise.all([
+          getLibrarySummary(),
+          getArtists(),
+        ]);
+        if (!mounted) return;
+        setSongs(library.songs);
+        setAlbums(library.albums);
+        setArtists(artistList);
+        setError("");
+      } catch (requestError) {
+        if (!mounted) return;
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : "Khong tai duoc du lieu tu API",
+        );
+      }
+      {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
 
-    void (async () => {
-      try {
-        setLoading(true);
-        const [library, artistList] = await Promise.all([getLibrarySummary(), getArtists()]);
-        if (!mounted) return;
-
-        setSongs(library.songs);
-        setAlbums(library.albums);
-        setArtists(artistList);
-        setError('');
-      } catch (requestError) {
-        if (!mounted) return;
-        setError(requestError instanceof Error ? requestError.message : 'Khong tai duoc du lieu tu API');
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-
     if (isAuthenticated && currentUser) {
-      void getRecentPlayHistories(currentUser)
+      void getRecentPlayHistories(currentUser.toString())
         .then((data) => {
           if (mounted) {
             setRecentSongs(data.slice(0, 20));
           }
         })
-        .catch((err) => console.error('Loi lay lich su nghe nhac:', err));
+        .catch((err) => console.error("Lỗi lấy lịch sử nghe nhạc:", err));
     }
 
     return () => {
       mounted = false;
     };
-  }, [currentUser]);
+  }, [currentUser, currentTrack?.id, isAuthenticated]);
 
   const artistCards = useMemo<ArtistCard[]>(() => {
     return artists.map((artist) => {
-      const artistAlbums = albums.filter((album) => album.artistId === artist.id);
-      const albumTracks = songs.filter((song) => artistAlbums.some((album) => album.id === song.albumId));
+      const artistAlbums = albums.filter(
+        (album) => album.artistId === artist.id,
+      );
+      const albumTracks = songs.filter((song) =>
+        artistAlbums.some((album) => album.id === song.albumId),
+      );
       const coverImageUrl =
         artist.avatarUrl ??
         artistAlbums.find((album) => album.coverImageUrl)?.coverImageUrl ??
         artist.coverImageUrl ??
         albumTracks.find((song) => song.coverImageUrl)?.coverImageUrl ??
         null;
-
-      return {
-        ...artist,
-        coverImageUrl,
-      };
+      return { ...artist, coverImageUrl };
     });
   }, [albums, artists, songs]);
 
-  const artistAlbumCount = (artistId: string) => albums.filter((album) => album.artistId === artistId).length;
-  const artistTrackCount = (artistId: string) => songs.filter((song) => albums.some((album) => album.id === song.albumId && album.artistId === artistId)).length;
+  const artistAlbumCount = (artistId: string) =>
+    albums.filter((album) => album.artistId === artistId).length;
+  const artistTrackCount = (artistId: string) =>
+    songs.filter((song) =>
+      albums.some(
+        (album) => album.id === song.albumId && album.artistId === artistId,
+      ),
+    ).length;
 
   return (
     <div className="p-6 space-y-10 text-white">
       <h1 className="text-3xl font-bold">Trang chủ</h1>
 
+      {/* NGHỆ SĨ */}
       <section className="space-y-4">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-neutral-400 mb-2">Nghệ sĩ</p>
+            <p className="text-sm uppercase tracking-[0.25em] text-neutral-400 mb-2">
+              Nghệ sĩ
+            </p>
             <h2 className="text-2xl md:text-3xl font-bold">Nghệ sĩ nổi bật</h2>
           </div>
-          <span className="text-sm text-neutral-400">{artistCards.length} nghệ sĩ</span>
+          <span className="text-sm text-neutral-400">
+            {artistCards.length} nghệ sĩ
+          </span>
         </div>
-
         {loading ? (
-          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">Đang tải dữ liệu...</div>
+          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">
+            Đang tải dữ liệu...
+          </div>
         ) : error ? (
           <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-red-300">
             Không tải được dữ liệu nghệ sĩ. {error}
@@ -123,26 +164,37 @@ export default function Home() {
                   )}
                 </div>
                 <p className="font-semibold truncate">{artist.name}</p>
-                <p className="text-sm text-neutral-400 truncate">{artistAlbumCount(artist.id)} album</p>
-                <p className="text-sm text-neutral-400 truncate">{artistTrackCount(artist.id)} bài hát</p>
+                <p className="text-sm text-neutral-400 truncate">
+                  {artistAlbumCount(artist.id)} album
+                </p>
+                <p className="text-sm text-neutral-400 truncate">
+                  {artistTrackCount(artist.id)} bài hát
+                </p>
               </Link>
             ))}
           </div>
         )}
       </section>
 
+      {/* NGHE GẦN ĐÂY */}
       {isAuthenticated && (
         <section className="space-y-4">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <p className="text-sm uppercase tracking-[0.25em] text-neutral-400 mb-2">Nghe gần đây</p>
-              <h2 className="text-2xl md:text-3xl font-bold">Nhạc bạn vừa nghe</h2>
+              <p className="text-sm uppercase tracking-[0.25em] text-neutral-400 mb-2">
+                Nghe gần đây
+              </p>
+              <h2 className="text-2xl md:text-3xl font-bold">
+                Nhạc bạn vừa nghe
+              </h2>
             </div>
             <span className="text-sm text-neutral-400">Tối đa 20 bài</span>
           </div>
 
           {loading ? (
-            <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">Đang tải dữ liệu...</div>
+            <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">
+              Đang tải dữ liệu...
+            </div>
           ) : recentSongs.length === 0 ? (
             <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">
               Chưa có lịch sử nghe gần đây.
@@ -150,16 +202,26 @@ export default function Home() {
           ) : (
             <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
               {recentSongs.map((song) => {
-                const coverUrl = song.coverImageUrl
-                  ? resolveAssetUrl(song.coverImageUrl)
-                  : resolveAssetUrl('default-cover.svg');
+                // Tìm bài hát gốc trùng khớp để lấy thông tin chuẩn xác nhất nếu data từ API nghe gần đây thiếu
+                const matchingSong = songs.find(
+                  (s) => s.id === song.mediaItemId,
+                );
+
+                // Ưu tiên lấy data từ bài hát gốc (matchingSong), nếu không có thì fallback về data của song hoặc default
+                const coverUrl = matchingSong?.coverImageUrl
+                  ? resolveAssetUrl(matchingSong.coverImageUrl)
+                  : song.coverImageUrl
+                    ? resolveAssetUrl(song.coverImageUrl)
+                    : resolveAssetUrl("default-cover.svg");
+
+                const artistName =
+                  matchingSong?.artistName ?? song.artistName ?? "TuneVault";
 
                 return (
                   <button
                     key={song.id}
                     type="button"
                     onClick={() => {
-                      const matchingSong = songs.find((s) => s.id === song.mediaItemId);
                       if (matchingSong) {
                         playTrack(matchingSong, songs);
                       }
@@ -172,10 +234,12 @@ export default function Home() {
                       className="w-full aspect-square object-cover rounded-xl mb-3 shadow-lg"
                     />
                     <h3 className="font-semibold truncate">
-                      {song.mediaTitle || `Bài hát ${song.mediaItemId.substring(0, 4)}`}
+                      {song.mediaTitle ||
+                        matchingSong?.title ||
+                        `Bài hát ${song.mediaItemId.substring(0, 4)}`}
                     </h3>
                     <p className="text-sm text-neutral-400 truncate">
-                      {song.artistName ?? 'TuneVault'}
+                      {artistName}
                     </p>
                   </button>
                 );
@@ -185,19 +249,26 @@ export default function Home() {
         </section>
       )}
 
+      {/* BÀI HÁT */}
       <section className="space-y-4">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-neutral-400 mb-2">Tuần này</p>
+            <p className="text-sm uppercase tracking-[0.25em] text-neutral-400 mb-2">
+              Tuần này
+            </p>
             <h2 className="text-3xl font-bold">Danh sách bài hát</h2>
           </div>
-          <Link to="/library" className="text-sm text-neutral-300 hover:text-white transition">
+          <Link
+            to="/library"
+            className="text-sm text-neutral-300 hover:text-white transition"
+          >
             Mở thư viện
           </Link>
         </div>
-
         {loading ? (
-          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">Đang tải dữ liệu...</div>
+          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">
+            Đang tải dữ liệu...
+          </div>
         ) : error ? (
           <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-red-300">
             Không tải được dữ liệu bài hát. {error}
@@ -221,16 +292,18 @@ export default function Home() {
                         alt={song.title}
                         className="h-full w-full object-cover"
                       />
-                    ) : song.mediaType === 'Video' ? (
+                    ) : song.mediaType === "Video" ? (
                       <Video size={24} />
                     ) : (
                       <Music2 size={24} />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-lg font-semibold truncate">{song.title}</p>
+                    <p className="text-lg font-semibold truncate">
+                      {song.title}
+                    </p>
                     <p className="text-sm text-neutral-400 truncate">
-                      {song.artistName ?? 'TuneVault'} • {song.duration}
+                      {song.artistName ?? "TuneVault"} • {song.duration}
                     </p>
                     <div className="mt-4 flex items-center gap-3">
                       <button
@@ -239,21 +312,30 @@ export default function Home() {
                       >
                         <Play size={16} /> Phát
                       </button>
-                      {song.mediaType === 'Video' ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedMedia({ id: song.id, title: song.title });
+                          setIsShareOpen(true);
+                        }}
+                        className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-white/10 text-white/80 hover:text-white hover:border-white/30 transition"
+                        title="Chia sẻ"
+                      >
+                        <Send size={14} />
+                      </button>
+                      {song.mediaType === "Video" ? (
                         <button
                           onClick={() => openVideo(song)}
                           className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/80 hover:text-white hover:border-white/30 transition"
                         >
-                          <Plus size={16} />
-                          Xem video
+                          <Plus size={16} /> Xem video
                         </button>
                       ) : (
                         <Link
                           to="/library"
                           className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/80 hover:text-white hover:border-white/30 transition"
                         >
-                          <Plus size={16} />
-                          Thêm vào playlist
+                          <Plus size={16} /> Thêm vào playlist
                         </Link>
                       )}
                     </div>
@@ -265,19 +347,14 @@ export default function Home() {
         )}
       </section>
 
+      {/* ALBUM */}
       <section className="space-y-4">
         <div className="flex items-end justify-between gap-4">
-          <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-neutral-400 mb-2">Album</p>
-            <h3 className="text-2xl font-bold">Danh sách Album</h3>
-          </div>
+          <h3 className="text-2xl font-bold">Danh sách Album</h3>
         </div>
-
         {loading ? (
-          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">Đang tải dữ liệu...</div>
-        ) : error ? (
-          <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-red-300">
-            Không tải được dữ liệu album. {error}
+          <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">
+            Đang tải dữ liệu...
           </div>
         ) : albums.length === 0 ? (
           <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">
@@ -293,12 +370,14 @@ export default function Home() {
               >
                 <div className="aspect-square rounded-xl bg-neutral-800 overflow-hidden mb-4 flex items-center justify-center text-neutral-400">
                   {album.coverImageUrl ||
-                  songs.find((song) => song.albumId === album.id)?.coverImageUrl ? (
+                  songs.find((song) => song.albumId === album.id)
+                    ?.coverImageUrl ? (
                     <img
                       src={resolveAssetUrl(
                         album.coverImageUrl ??
-                          songs.find((song) => song.albumId === album.id)?.coverImageUrl ??
-                          '',
+                          songs.find((song) => song.albumId === album.id)
+                            ?.coverImageUrl ??
+                          "",
                       )}
                       alt={album.title}
                       className="h-full w-full object-cover"
@@ -309,13 +388,20 @@ export default function Home() {
                 </div>
                 <p className="text-lg font-semibold truncate">{album.title}</p>
                 <p className="text-sm text-neutral-400 truncate">
-                  {album.artistName ?? 'TuneVault'} • {album.releaseDate}
+                  {album.artistName ?? "TuneVault"} • {album.releaseDate}
                 </p>
               </Link>
             ))}
           </div>
         )}
       </section>
+
+      <ShareModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        mediaItemId={selectMedia.id}
+        mediaTitle={selectMedia.title}
+      />
     </div>
   );
 }
