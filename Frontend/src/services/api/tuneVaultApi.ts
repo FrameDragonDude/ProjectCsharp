@@ -127,7 +127,20 @@ export async function register(username: string, email: string, password: string
 
 export async function getProfile() {
   const response = await axiosClient.get('/user/profile');
-  return response.data as { id: string; username: string; email: string; fullName: string; bio: string; avatarUrl: string; location?: string; website?: string; followersCount: number; followingCount: number };
+  return response.data as { 
+    id: string; 
+    username: string; 
+    email: string; 
+    fullName: string; 
+    bio: string; 
+    avatarUrl: string; 
+    location?: string; 
+    website?: string; 
+    followersCount: number; 
+    followingCount: number;
+    role?: string;
+    roleId?: number;
+  };
 }
 
 export async function updateProfile(fullName: string, bio: string, avatarUrl: string) {
@@ -158,5 +171,14 @@ export async function toggleFollow(targetId: string, type: 'User' | 'Artist' = '
 
 export async function getFollowing(): Promise<FollowedEntity[]> {
   const response = await axiosClient.get<FollowedEntity[]>('/user/following');
+  return response.data;
+}
+
+export async function changeUserRole(keyword: string, action: 'upgrade' | 'downgrade', artistName?: string) {
+  const response = await axiosClient.post('/admin/change-role', {
+    keyword,      
+    action,
+    artistName
+  });
   return response.data;
 }

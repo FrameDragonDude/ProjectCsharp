@@ -8,12 +8,13 @@ import Search from './features/explore/Search';
 import Library from './features/library/Library';
 import PlaylistDetail from './features/library/PlaylistDetail';
 import Notifications from './features/notification/Notifications';
-import Profile from './features/auth/Profile'; // Import trang Hồ sơ
+import Profile from './features/auth/Profile';
 import ShareInbox from './features/share/ShareInbox';
 import VideoPlayer from './features/player/VideoPlayer';
 import AlbumDetail from './features/album/AlbumDetail';
 import ArtistDetail from './features/artist/ArtistDetail';
 import ProtectedRoute from './routes/ProtectedRoute';
+import AdminArtistTab from './features/admin/AdminArtistTab.tsx';
 import { useEffect } from 'react';
 function App() {
   
@@ -46,6 +47,7 @@ function App() {
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/share" element={<ShareInbox />} />
+            <Route path="/admin" element={<AdminArtistTab />} />
           </Route>
         </Route>
       </Routes>
