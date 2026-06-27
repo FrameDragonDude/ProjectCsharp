@@ -1,11 +1,12 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Plus, Upload, ListMusic, Video, Music, Play } from 'lucide-react';
+import { Heart, Plus, Upload, ListMusic, Video, Music, Play, Share } from 'lucide-react';
 import { addMediaToPlaylist, createPlaylist, getLibrarySummary, createAlbum, getPlaylistTracks, uploadMediaItem } from '../../services/api/tuneVaultApi';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import type { MediaItem, Playlist } from '../../types';
 import { resolveAssetUrl } from '../../utils/resolveAsset';
+import ShareModal from '../../components/ShareModal';
 
 export default function Library() {
   const [activeTab, setActiveTab] = useState<'playlists' | 'uploads'>('playlists');
@@ -32,7 +33,11 @@ export default function Library() {
   const [targetPlaylistId, setTargetPlaylistId] = useState('');
   const playTrack = usePlayerStore((state) => state.playTrack);
   const user = useAuthStore((state) => state.user);
+  const role = useAuthStore((state) => state.role);
   const navigate = useNavigate();
+  const [isShareModalOpen, setShareModalOpen] = useState(false);
+  const [selectedMediaForShare, setSelectedMediaForShare] = useState<MediaItem | null>(null);
+
 
   const loadLibrary = async () => {
     try {
@@ -167,20 +172,24 @@ export default function Library() {
             <Plus size={16} />
             <span>Create Playlist</span>
           </button>
-          <button
-            onClick={() => setUploadOpen(true)}
-            className="flex items-center space-x-2 bg-green-500 hover:bg-green-400 text-black px-3 py-1.5 rounded-full text-sm font-bold transition"
-          >
-            <Upload size={16} />
-            <span>Upload Media</span>
-          </button>
-          <button
-            onClick={() => setCreateAlbumOpen(true)}
-            className="flex items-center space-x-2 bg-transparent border border-neutral-600 hover:border-white px-3 py-1.5 rounded-full text-sm font-medium transition"
-          >
-            <Plus size={16} />
-            <span>Create Album</span>
-          </button>
+          {(role === 'Admin' || role === 'Artist') && (
+            <>
+              <button
+                onClick={() => setUploadOpen(true)}
+                className="flex items-center space-x-2 bg-green-500 hover:bg-green-400 text-black px-3 py-1.5 rounded-full text-sm font-bold transition"
+              >
+                <Upload size={16} />
+                <span>Upload Media</span>
+              </button>
+              <button
+                onClick={() => setCreateAlbumOpen(true)}
+                className="flex items-center space-x-2 bg-transparent border border-neutral-600 hover:border-white px-3 py-1.5 rounded-full text-sm font-medium transition"
+              >
+                <Plus size={16} />
+                <span>Create Album</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -286,6 +295,16 @@ export default function Library() {
                         >
                           <Plus size={14} />
                           Add to playlist
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedMediaForShare(item);
+                            setShareModalOpen(true);
+                          }}
+                          className="inline-flex items-center gap-2 rounded-full border border-neutral-600 px-3 py-1.5 text-sm font-medium hover:border-white transition"
+                        >
+                          <Share size={14} />
+                          Share
                         </button>
                       </div>
                     </div>
@@ -504,6 +523,21 @@ export default function Library() {
             </div>
           </div>
         </div>
+      )}
+
+      {selectedMediaForShare && (
+        <ShareModal
+            isOpen={isShareModalOpen}
+            onClose={() => {
+                setShareModalOpen(false);
+                setSelectedMediaForShare(null);
+            }}
+            mediaItemId={selectedMediaForShare.id}
+            mediaTitle={selectedMediaForShare.title}
+            albumId={null}
+            artistId={null}
+            playlistId={null}
+        />
       )}
     </div>
   );

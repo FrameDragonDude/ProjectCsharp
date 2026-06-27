@@ -66,7 +66,7 @@ export const useNotificationStore = create<NotificationStore>((set,get) => ({
         }
     },
 
-    connectSignalR: () => {
+    connectSignalR: (userId: string) => {
         if (get().connection) return;
 
         const token = localStorage.getItem('tunevault_token');
