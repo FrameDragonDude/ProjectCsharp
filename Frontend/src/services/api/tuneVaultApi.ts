@@ -149,6 +149,16 @@ export async function uploadAvatar(file: File): Promise<string> {
   return response.data.avatarUrl;
 }
 
+export async function getFavorites(): Promise<MediaItem[]> {
+  const response = await axiosClient.get<MediaItem[]>('/favorites');
+  return response.data;
+}
+
+export async function toggleFavorite(mediaItemId: string): Promise<{ isFavorite: boolean }> {
+  const response = await axiosClient.post<{ isFavorite: boolean }>(`/favorites/toggle/${mediaItemId}`);
+  return response.data;
+}
+
 export async function toggleFollow(targetId: string, type: 'User' | 'Artist' = 'Artist') {
   const response = await axiosClient.post(`/follow/${targetId}`, null, {
     params: { type },

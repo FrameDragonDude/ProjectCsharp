@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, Edit2, MapPin, Link as LinkIcon, User } from 'lucide-react';
+import { Edit2, User } from 'lucide-react';
 import EditProfileModal from './EditProfileModal';
 import FollowingModal from './FollowingModal';
 import { getProfile, getLibrarySummary } from '../../services/api/tuneVaultApi';
@@ -12,7 +12,6 @@ export default function Profile() {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isFollowingModalOpen, setIsFollowingModalOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
 
   const [userProfile, setUserProfile] = useState({
@@ -30,7 +29,6 @@ export default function Profile() {
   useEffect(() => {
     async function fetchProfile() {
       try {
-        setLoading(true);
         const [data, libraryData] = await Promise.all([
           getProfile(),
           getLibrarySummary()
@@ -48,8 +46,6 @@ export default function Profile() {
         setPlaylists(libraryData.playlists.filter(p => p.isPublic));
       } catch (error) {
         console.error("Lỗi tải thông tin user", error);
-      } finally {
-        setLoading(false);
       }
     }
     fetchProfile();

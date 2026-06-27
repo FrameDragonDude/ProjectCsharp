@@ -58,17 +58,17 @@ export default function PlayerBar() {
 
       <div className="flex flex-col items-center justify-center w-1/3 space-y-2">
         <div className="flex items-center space-x-6">
-          <button disabled={!canGoPrevious} onClick={previous} className="text-neutral-400 hover:text-white transition disabled:opacity-30 disabled:hover:text-neutral-400">
+          <button disabled={!canGoPrevious} onClick={() => previous()} className="text-neutral-400 hover:text-white transition disabled:opacity-30 disabled:hover:text-neutral-400">
             <SkipBack size={20} />
           </button>
           <button
-            onClick={togglePlay}
+            onClick={() => togglePlay()}
             className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-black hover:scale-105 transition disabled:opacity-50"
             disabled={!currentTrack}
           >
             {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
           </button>
-          <button disabled={!canGoNext} onClick={next} className="text-neutral-400 hover:text-white transition disabled:opacity-30 disabled:hover:text-neutral-400">
+          <button disabled={!canGoNext} onClick={() => next()} className="text-neutral-400 hover:text-white transition disabled:opacity-30 disabled:hover:text-neutral-400">
             <SkipForward size={20} />
           </button>
           {currentTrack?.mediaType === 'Video' && (

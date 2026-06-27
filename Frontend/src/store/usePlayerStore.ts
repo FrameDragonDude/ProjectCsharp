@@ -7,8 +7,7 @@ import { getUserIdFromToken } from '../utils/authUtils';
 const fallbackUserId = '2';
 
 const recordPlayHistory = (mediaItemId: string) => {
-	const userId = useAuthStore.getState().user?.id || getUserIdFromToken() || fallbackUserId;
-	void recordPlayHistoryApi(mediaItemId, userId).catch((error) => {
+	void recordPlayHistoryApi(mediaItemId).catch((error) => {
 		console.error('Khong luu duoc lich su nghe:', error);
 	});
 };
@@ -23,6 +22,9 @@ interface PlayerState {
 	progress: number;
 	duration: number;
 	songForDetail: MediaItem | null;
+	songDetailModalOpen: boolean;
+	openSongDetailModal: () => void;
+	closeSongDetailModal: () => void;
 	playTrack: (track: MediaItem, queue?: MediaItem[]) => void;
 	playQueue: (tracks: MediaItem[], startIndex?: number) => void;
 	openVideo: (track: MediaItem) => void;
@@ -47,6 +49,9 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 	progress: 0,
 	duration: 0,
 	songForDetail: null,
+	songDetailModalOpen: false,
+	openSongDetailModal: () => set({ songDetailModalOpen: true }),
+	closeSongDetailModal: () => set({ songDetailModalOpen: false }),
 	playTrack: (track, queue) => {
 		recordPlayHistory(track.id);
 		set({
