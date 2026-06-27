@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, Plus, Upload, ListMusic, Video, Music, Play, Share } from 'lucide-react';
 import { addMediaToPlaylist, createPlaylist, getLibrarySummary, createAlbum, getPlaylistTracks, uploadMediaItem, getMyPlaylists } from '../../services/api/tuneVaultApi';
