@@ -5,7 +5,6 @@ import { useNotificationStore } from '../../store/useNotificationStore';
 
 export default function Notifications() {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotificationStore();
-  const currentUser = "22222222-2222-2222-2222-222222222222";
 
   // Hàm chọn icon dựa trên loại thông báo
   const getIcon = (type: string) => {
@@ -73,7 +72,7 @@ export default function Notifications() {
         
         {unreadCount > 0 && (
           <button 
-            onClick={() => markAllAsRead(currentUser)}
+            onClick={() => markAllAsRead()}
             className="flex items-center space-x-2 text-sm text-neutral-400 hover:text-white transition"
           >
             <Check size={16} />

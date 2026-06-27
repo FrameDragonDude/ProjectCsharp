@@ -17,12 +17,12 @@ export default function Sidebar() {
     navigate('/login');
   };
 
-  useEffect (() => {
-    if (isAuthenticated && currentUser) {
-      fetchNotifications(currentUser);
-      connectSignalR(currentUser);
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchNotifications();
+      connectSignalR();
     }
-  },[isAuthenticated, currentUser, fetchNotifications, connectSignalR])
+  }, [isAuthenticated, fetchNotifications, connectSignalR]);
 
   return (
     <aside className="w-60 bg-black flex flex-col p-6 space-y-8">
