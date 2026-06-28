@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Backend.Domain.Entities;
 
@@ -18,6 +19,11 @@ public class Artist
     [MaxLength(512)]
     public string? AvatarUrl { get; set; }
 
+    [Required]
+    public int UserId { get; set; }
+
     // Navigation Properties
+    [ForeignKey("UserId")]
+    public virtual User? User { get; set; }
     public virtual ICollection<Album> Albums { get; set; } = new List<Album>();
 }

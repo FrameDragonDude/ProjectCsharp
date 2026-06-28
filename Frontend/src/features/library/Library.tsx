@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Plus, Upload, ListMusic, Video, Music, Play, Share } from 'lucide-react';
-import { addMediaToPlaylist, createPlaylist, getLibrarySummary, createAlbum, getPlaylistTracks, uploadMediaItem, getMyPlaylists } from '../../services/api/tuneVaultApi';
+import { Heart, Plus, Upload, ListMusic, Video, Music, Play, Share, Trash2 } from 'lucide-react';
+import { addMediaToPlaylist, createPlaylist, getLibrarySummary, createAlbum, getPlaylistTracks, uploadMediaItem, getMyPlaylists, deletePlaylist, deleteMediaItem } from '../../services/api/tuneVaultApi';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import type { MediaItem, Playlist } from '../../types';
@@ -216,28 +216,49 @@ export default function Library() {
                 {playlists.map((playlist) => (
                   <div
                     key={playlist.id}
-                    onClick={() => navigate(`/playlist/${playlist.id}`)}
-                    className="p-4 bg-neutral-800/40 hover:bg-neutral-800 rounded-md cursor-pointer transition group"
+                    className="p-4 bg-neutral-800/40 hover:bg-neutral-800 rounded-md transition group relative"
                   >
                     <div
-                      className={`w-full aspect-square mb-4 rounded overflow-hidden shadow-lg flex items-center justify-center ${
-                        playlist.name.toLowerCase().includes('thich') ? 'bg-gradient-to-br from-indigo-600 to-blue-400' : 'bg-neutral-700'
-                      }`}
+                      onClick={() => navigate(`/playlist/${playlist.id}`)}
+                      className="cursor-pointer"
                     >
-                      {playlist.coverImageUrl ?? playlistCovers[String(playlist.id)] ? (
-                        <img
-                          src={resolveAssetUrl(playlist.coverImageUrl ?? playlistCovers[String(playlist.id)] ?? '')}
-                          alt={playlist.name}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : playlist.name.toLowerCase().includes('thich') ? (
-                        <Heart size={48} className="text-white" fill="white" />
-                      ) : (
-                        <ListMusic size={48} className="text-neutral-500" />
-                      )}
+                      <div
+                        className={`w-full aspect-square mb-4 rounded overflow-hidden shadow-lg flex items-center justify-center ${
+                          playlist.name.toLowerCase().includes('thich') ? 'bg-gradient-to-br from-indigo-600 to-blue-400' : 'bg-neutral-700'
+                        }`}
+                      >
+                        {playlist.coverImageUrl ?? playlistCovers[String(playlist.id)] ? (
+                          <img
+                            src={resolveAssetUrl(playlist.coverImageUrl ?? playlistCovers[String(playlist.id)] ?? '')}
+                            alt={playlist.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : playlist.name.toLowerCase().includes('thich') ? (
+                          <Heart size={48} className="text-white" fill="white" />
+                        ) : (
+                          <ListMusic size={48} className="text-neutral-500" />
+                        )}
+                      </div>
+                      <h4 className="font-semibold text-white truncate mb-1">{playlist.name}</h4>
+                      <p className="text-sm text-neutral-400">{playlist.trackCount} tracks</p>
                     </div>
-                    <h4 className="font-semibold text-white truncate mb-1">{playlist.name}</h4>
-                    <p className="text-sm text-neutral-400">{playlist.trackCount} tracks</p>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Xóa playlist "${playlist.name}"?`)) {
+                          try {
+                            await deletePlaylist(playlist.id);
+                            await loadLibrary();
+                          } catch (err: any) {
+                            alert(err?.response?.data?.message || 'Không thể xóa playlist!');
+                          }
+                        }
+                      }}
+                      className="absolute top-2 right-2 p-1.5 bg-red-500/80 hover:bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition"
+                      title="Xóa playlist"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -308,6 +329,26 @@ export default function Library() {
                           <Share size={14} />
                           Share
                         </button>
+                        {role && role !== 'User' && role !== '3' && (
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (window.confirm(`Xóa "${item.title}"?`)) {
+                              try {
+                                await deleteMediaItem(item.id);
+                                await loadLibrary();
+                              } catch (err: any) {
+                                alert(err?.response?.data?.message || 'Không thể xóa media này!');
+                              }
+                            }
+                          }}
+                          className="inline-flex items-center gap-2 rounded-full border border-red-600 px-3 py-1.5 text-sm font-medium text-red-400 hover:bg-red-500/20 transition"
+                          title="Xóa"
+                        >
+                          <Trash2 size={14} />
+                          Delete
+                        </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -325,7 +366,7 @@ export default function Library() {
               visibleUploads.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between p-3 rounded-md hover:bg-neutral-800/50 cursor-pointer group transition"
+                  className="flex items-center justify-between p-3 rounded-md hover:bg-neutral-800/50 group transition"
                 >
                   <div className="flex items-center space-x-4 min-w-0">
                     <div className="w-12 h-12 bg-neutral-700 rounded overflow-hidden flex items-center justify-center text-neutral-400">
@@ -342,7 +383,28 @@ export default function Library() {
                       <p className="text-sm text-neutral-400 capitalize truncate">{item.mediaType}</p>
                     </div>
                   </div>
-                  <div className="text-sm text-neutral-400">{item.duration}</div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="text-sm text-neutral-400">{item.duration}</div>
+                    {role && role !== 'User' && role !== '3' && (
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Xóa "${item.title}"?`)) {
+                          try {
+                            await deleteMediaItem(item.id);
+                            await loadLibrary();
+                          } catch (err: any) {
+                            alert(err?.response?.data?.message || 'Không thể xóa media này!');
+                          }
+                        }
+                      }}
+                      className="p-1.5 text-neutral-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"
+                      title="Xóa"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                    )}
+                  </div>
                 </div>
               ))
             ) : (

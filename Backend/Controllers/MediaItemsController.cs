@@ -138,6 +138,7 @@ public class MediaItemsController : ControllerBase
         if (item == null) return NotFound();
 
         bool isAdmin = User.IsInRole("Admin");
+        // ArtistId == userId (upload code sets ArtistId = userId)
         if (!isAdmin && item.ArtistId != userId)
         {
             return StatusCode(403, new { message = "Bạn không có quyền xóa nhạc của người khác!" });

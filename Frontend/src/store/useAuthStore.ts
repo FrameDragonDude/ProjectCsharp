@@ -27,7 +27,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   setAuth: (user, token) => {
     localStorage.setItem('tunevault_token', token);
     localStorage.setItem('tunevault_user', JSON.stringify(user));
-    set({ user, token, isAuthenticated: true });
+    const decodedRole = getUserRoleFromToken();
+    set({ user, token, isAuthenticated: true, role: decodedRole });
   },
   
   logout: () => {

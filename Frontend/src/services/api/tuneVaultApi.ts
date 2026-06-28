@@ -66,6 +66,18 @@ export async function removeMediaFromPlaylist(playlistId: string | number, media
   });
 }
 
+export async function deletePlaylist(playlistId: string | number): Promise<void> {
+  await axiosClient.delete(`/playlists/${playlistId}`);
+}
+
+export async function deleteAlbum(albumId: string | number): Promise<void> {
+  await axiosClient.delete(`/albums/${albumId}`);
+}
+
+export async function deleteMediaItem(mediaItemId: string | number): Promise<void> {
+  await axiosClient.delete(`/mediaitems/${mediaItemId}`);
+}
+
 export async function getVideoItems(): Promise<MediaItem[]> {
   const response = await axiosClient.get<MediaItem[]>('/media/video');
   return response.data;

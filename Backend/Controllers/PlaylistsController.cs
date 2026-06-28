@@ -131,4 +131,26 @@ public class PlaylistsController : ControllerBase
 
         return NoContent();
     }
+
+    // DELETE: api/playlists/{id}
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeletePlaylist(int id)
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdValue, out var userId)) return Unauthorized();
+
+        var playlist = await _context.Playlists.FindAsync(id);
+        if (playlist == null) return NotFound("Không tìm thấy Playlist.");
+
+        bool isAdmin = User.IsInRole("Admin");
+        if (!isAdmin && playlist.CreatedByUserId != userId)
+        {
+            return StatusCode(403, new { message = "Bạn không có quyền xóa Playlist của người khác!" });
+        }
+
+        _context.Playlists.Remove(playlist);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
 }
