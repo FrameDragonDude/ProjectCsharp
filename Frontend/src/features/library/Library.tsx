@@ -208,9 +208,9 @@ export default function Library() {
             {loading ? (
               <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">Loading data...</div>
             ) : playlists.length === 0 ? (
-              <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">
-                No playlists in the database yet.
-              </div>
+                <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">
+                  No songs or videos in the database yet.
+                </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {playlists.map((playlist) => (
@@ -243,7 +243,7 @@ export default function Library() {
               </div>
             )}
 
-            <div>
+              <div>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold">Song list</h3>
                 <p className="text-sm text-neutral-400">Press play or add to a playlist</p>
@@ -253,7 +253,7 @@ export default function Library() {
                 <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">Loading data...</div>
               ) : songs.length === 0 ? (
                 <div className="rounded-2xl border border-white/5 bg-white/5 p-6 text-neutral-400">
-                  No songs in the database yet.
+                  No songs or videos in the database yet.
                 </div>
               ) : (
                 <div className="flex flex-col space-y-2">
@@ -275,7 +275,7 @@ export default function Library() {
                         <div className="min-w-0">
                           <p className="text-white font-semibold truncate">{item.title}</p>
                           <p className="text-sm text-neutral-400 truncate">
-                            {item.artistName ?? 'TuneVault'} • {item.duration}
+                            {item.artistName ?? 'TuneVault'} • {item.duration} • {item.mediaType === 'Video' ? 'Video' : 'Audio'}
                           </p>
                         </div>
                       </div>
