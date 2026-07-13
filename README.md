@@ -155,8 +155,5 @@ Nếu đây là một thiết lập mới và bạn muốn điền dữ liệu m
 
 ## Đóng góp
 
-Mọi đóng góp đều được hoan nghênh! Vui lòng mở các vấn đề hoặc gửi yêu cầu kéo.
+Mọi đóng góp đều được hoan nghênh!.
 
-## Giấy phép
-
-[Chỉ định giấy phép của bạn tại đây, ví dụ: MIT, Apache 2.0, v.v.]
